@@ -1,7 +1,7 @@
 ui-lib/node_modules
 nw/node_modules
 *.map
-nw/css/desktop.less
+nw/css/desktop.css
 ui-lib/dist/
 ui-lib/doc/_site/
 ui-lib/_site/
@@ -10,3 +10,4 @@ ui-lib/doc/assets/js/demoUI.js
 ui-lib/doc/assets/img/close.png
 ui-lib/doc/assets/img/cat.jpg
 ui-lib/doc/assets/font/*wesome*
+*.swp
