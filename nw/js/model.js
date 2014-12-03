@@ -1487,7 +1487,13 @@ var LauncherModel = Model.extend({
   },
 
   startUp: function(id_) {
-    this.emit('start-up', null, this.getCOMById(id_));
+    if (id_ === "datamgr-app"){
+        WDC.requireAPI(['app'], function(app){
+          app.startAppByName(function(){}, "datamgr", null);
+        });
+    }else {
+      this.emit('start-up', null, this.getCOMById(id_));
+    }
   }
 });
 
