@@ -1533,7 +1533,8 @@ var DeviceListModel = Model.extend({
     var _this = _global.get('desktop').getCOMById('device-list'),
         info = pera_.info,
         len = info.txt.length,
-        account_id_ = info.txt[len - 1];
+        // account_id_ = info.txt[len - 1];
+        account_id_ = info.txt[len - 2];
         dev_id_ = info.address + ':' + info.port;
     switch(pera_.flag) {
       case 'up':

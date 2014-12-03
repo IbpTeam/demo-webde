@@ -323,7 +323,10 @@ var Global = Class.extend({
               _this._dataOP = data;
               _this._imFileTransfer=fileTransferApp;
               // _this._account = acc;
-              cb_(null);
+              data.initDesktop(function(err_, success_) {
+                if(err_) return console.log(err_);
+                cb_(null);
+              });
             });
         }
       },
