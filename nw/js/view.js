@@ -1390,6 +1390,9 @@ var LauncherView = View.extend({
     }).on('contextmenu', function(e) {
       e.stopPropagation();
       e.preventDefault();
+    }).on('click', function(e) {
+      e.stopPropagation();
+      _this.toggle();
     });
     $(document).on('keydown', 'html', function(e) {
       switch(e.which) {
