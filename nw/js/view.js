@@ -157,6 +157,11 @@ var DesktopView = View.extend({
           _global._openingWindows.focusOnAWindow(this._id);
         });
       }},
+      {text: 'datamgr', action: function() {
+        WDC.requireAPI(['app'], function(app){
+          app.startAppByName(function(){}, 'datamgr', null);
+        });
+      }},
       {text: 'app-plugin', icon: 'icon-plus', subMenu: [
         {header: 'add-plugin'},
         {text: 'clock', icon: 'icon-time', action: function(e) {
@@ -1628,6 +1633,7 @@ var LauncherEntryView = View.extend({
         ctxMenu = _global.get('ctxMenu'),
         $menu_ = ctxMenu.getMenuByHeader('launcher');
     $view.on('click', function(e) {
+      e.stopPropagation();
       _this._controller.onClick();
       _this._parent.toggle();
     }).on('contextmenu', function(e) {
@@ -3798,13 +3804,13 @@ var LoginView = View.extend({
       'class': 'login-btn-bar'
     }).html(
       '<button class="btn active" id="btn-regist">注册>>></button>' +
-      '<button class="btn disable" id="btn-login">登陆</button>' +
+      '<button class="btn disable" id="btn-login">登录</button>' +
       '<button class="btn active hidden" id="btn-cancel">取消</button>'
     )).append($('<div>', {
       'class': 'login-waiting hidden'
     }).html(
       '<div class="loading icon-spin5 animate-spin"></div>' +
-      '<p>正在登陆，请稍后...</p>'
+      '<p>正在登录，请稍后...</p>'
     )).append($('<div>', {
       'class': 'login-regist hidden'
     }).html(
@@ -3863,7 +3869,7 @@ var LoginView = View.extend({
             $('#' + _this._id + '-window').remove();
           } else {
             _this.toggleLogin(false);
-            _this.$loginView.find('#msg1').html('登陆失败：' + msg_);
+            _this.$loginView.find('#msg1').html('登录失败：' + msg_);
           }
         }
         // _this._win.closeWindow(_this._win);
@@ -3924,7 +3930,7 @@ var LoginView = View.extend({
     var $view, title, height, width;
     if(toLogin_) {
       $view = this.$loginView;
-      title = '登陆';
+      title = '登录';
       height = 300;
       width = 500;
     } else {

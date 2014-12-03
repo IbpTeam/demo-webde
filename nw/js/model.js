@@ -1400,10 +1400,10 @@ var LauncherModel = Model.extend({
       var loginM = _this.getCOMById('login-app');
       if(state_) {
         loginM.setImgPath('img/Logout-icon.png');
-        loginM.setName('Logout');
+        loginM.setName('登出');
       } else {
         loginM.setImgPath('img/Login-icon.png');
-        loginM.setName('Login');
+        loginM.setName('登录');
       }
     };
   },
