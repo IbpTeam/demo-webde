@@ -162,6 +162,9 @@ var DesktopView = View.extend({
           app.startAppByName(function(){}, "datamgr", null);
         });
       }},
+      {text: 'save', action: function() {
+        _global.get('desktop').save();
+      }},
       {text: 'app-plugin', icon: 'icon-plus', subMenu: [
         {header: 'add-plugin'},
         {text: 'clock', icon: 'icon-time', action: function(e) {

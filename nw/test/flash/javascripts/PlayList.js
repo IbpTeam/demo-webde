@@ -6,6 +6,7 @@ var PlayList = Class.extend({
       callback_: undefined,
       img : 'img/bulb.png'
     }
+    this._firstVideo = undefined;
     if (options_) {
       for(var key in options_)
         this._options[key] = options_[key];
@@ -54,15 +55,22 @@ var PlayList = Class.extend({
   },
 
   setList: function(list_){
+        for(var key in list_)
+      {
+        console.log(list_[key]);
+      }
     var getName = function(path_){
       var _Arr = path_.split('/');
       return _Arr[_Arr.length - 1];
     }
-
     if (typeof list_ === 'object') {
       for(var key in list_){
         var _name = getName(list_[key]);
         this._playList[_name] = list_[key];
+        console.log(list_[key]);
+        if (!this._firstVideo) {
+          this._firstVideo = list_[key];
+        };
       }
     };
     this.setPlayList();

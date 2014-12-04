@@ -20,7 +20,7 @@
   var fv = undefined;
   var playlist = undefined;
   var play = function(src_){
-    fv.stop();
+    //fv.stop();
     fv.load([{
       src:  src_
     }]);
@@ -32,8 +32,15 @@
       console.log(err_);
       return 0;
     }
+    for(var key in videos_)
+      {
+        console.log(videos_[key]);
+      }
     if (videos_) {
       playlist.setList(videos_);
+      fv.load([{
+        src:  playlist._firstVideo
+      }]);
     } else {
       console.log('video is null');
     }
@@ -68,11 +75,6 @@
     }
 
     fv = $("#video").flareVideo();
-    fv.load([
-      {
-        src:  'http://video-js.zencoder.com/oceans-clip.webm'
-      }
-    ]);
     fv.fullWindow();
   })
   </script>

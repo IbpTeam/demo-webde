@@ -498,7 +498,7 @@ var DockModel = Model.extend({
       try {
         model = launcher.get(conf_[key].id);
       } catch(e) {
-        model = launcher.createAModel(conf_.insideApp[key], conf_[key].type);
+        model = launcher.createAModel(conf_[key], conf_[key].type);
       }
       this.add(model);
     }
