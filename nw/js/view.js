@@ -1359,8 +1359,8 @@ var LauncherView = View.extend({
         }
         if(_global._openingWindows.has(model_.getID() + '-window')) return ;
         Window.create(model_.getID() + '-window', model_.getName(), {
-          left: 400,
-          top: 300,
+          left: 300,
+          top: 200,
           height: 400,
           width: 700,
           fadeSpeed: 500,

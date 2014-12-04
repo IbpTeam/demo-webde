@@ -99,9 +99,9 @@ html, body {
     -ms-transform: translateX(0);
     -o-transform: translateX(0);
     transform: translateX(0); }
-  @media screen and (max-device-width: 1280px) {
+/*@media screen and (max-device-width: 1280px) {
     .playList-trigger {
-      display: none; } }
+      display: none; } }*/
 
 .playList {
   width: 220px;
