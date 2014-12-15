@@ -1150,7 +1150,7 @@ var DEntryView = WidgetView.extend({
         _this = this,
         desktop = _global.get('desktop');
 
-    $selector.dblclick(function() {
+    $selector.click(function() {
       _this._controller.onDblclick();
     }).mouseenter(function() {
       var $p = _this.$view.children('p');
