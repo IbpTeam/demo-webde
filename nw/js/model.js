@@ -2,7 +2,6 @@
 //
 
 //This class contains all theme relevant data and service.
-//TODO: replace the nodejs apis to ourselves.
 //
 var ThemeModel = Model.extend({
   init: function(callback_) {
@@ -198,7 +197,8 @@ var DesktopModel = Model.extend({
       },
       {
         fn: function(pera_, cb_) {
-          _this.start(cb_);
+          _this.login(cb_);
+          // _this.start(cb_);
         }
       },
       {
@@ -206,12 +206,12 @@ var DesktopModel = Model.extend({
           callback_.call(this, null);
           cb_(null);
         }
-      },
-      {
-        fn: function(pera_, cb_) {
-          _this.postStart(cb_);
-        }
-      }
+      }/* ,change the start sequence */
+      // {
+        // fn: function(pera_, cb_) {
+          // _this.postStart(cb_);
+        // }
+      /* } */
     ]);
   },
 
@@ -219,8 +219,18 @@ var DesktopModel = Model.extend({
     // this.save();
     for(var key in this._c) {
       this._c[key].release();
+      this.remove(this._c[key]);
     }
-    this._desktopWatch.close();
+    // this._desktopWatch.close();
+    var ws = _global.get('ws');
+    /* if(ws.isLocal()) { */
+      // ws.send({
+        // Action: 'notify',
+        // Event: 'shutdown',
+        // Data: 'shutdown'
+      // });
+    /* } */
+    ws.close();
   },
 
   // Put codes needed run before starting in this function
@@ -230,6 +240,17 @@ var DesktopModel = Model.extend({
     console.log('pre start');
     // TODO: move to Global
     this._view = DesktopView.create(this);
+    // register to server
+    var ws = _global.get('ws');
+    ws.send({ 
+      Action: 'on',
+      Event: 'shutdown'
+    }).on('shutdown', function(msg) {
+      if(!ws.isLocal() && msg == 'shutdown') {
+        alert('远程系统已关闭，该页面将关闭');
+        window.close();
+      }
+    }); 
     // get user config data, create all components(Launcher, Layout, Dock, DeviceList)
     this.add(FlipperModel.create('layout', this, LayoutManager));
     this.add(DeviceListModel.create(this));
@@ -237,45 +258,48 @@ var DesktopModel = Model.extend({
     this.add(LauncherModel.create(this));
     // this.initDesktopWatcher();
     this._inputer = Inputer.create('d-inputer');
-    this._DESKTOP_DIR = '/data/desktop';
+    cb_.call(this, null);
+  },
+
+  login: function(cb_) {
+    console.log('login');
+    // TODO: read a default conf, then create a temp layout model,
+    // and delete it after login successfully
     var _this = this;
-    // remove the Watcher
-    // TODO: remove these code when not needed
-    /* _global._dataOP.CreateWatcher(function(err_, watcher_) {  */
-      // if(err_) {
-        // return console.log(err_);
-      // }
-      /* _this.initDesktopWatcher(watcher_); */
-      _global._dataOP.readDesktopConfig(function(err_, ret_) {
-        if(err_) return console.log(err_);
-        _this._USER_CONFIG = ret_;
-        _global._dataOP.readDesktopConfig(function(err_, ret_) {
-          if(err_) return console.log(err_);
-          _this._DEFAULT_APP = ret_;
-          cb_(null);
-        }, 'defaults.list');
-      }, 'Widget.conf');
-      /* _global._fs.readFile(_global.$xdg_data_home + "/widget.conf" */
-        // , 'utf-8', function(err, data) {
-          // if(err) {
-            // console.log(err);
-            // cb_(err);
-          // } else {
-            // _this._USER_CONFIG = data;
-            // cb_(null);
-          // }
-        /* }); */
-    // }, this._DESKTOP_DIR); 
+    _global._dataOP.readDesktopConfig(function(err_, ret_) {
+      if(err_) return console.log(err_);
+      _this.getCOMById('layout').load(ret_.layout);
+      if(typeof cb_ === 'function') cb_.call(_this, null);
+    }, 'Default.conf');
+    /* this._c['launcher'].createAModel({ */
+      // id: 'login-app',
+      // path: '',
+      // iconpath: 'img/launcher.png',
+      // name: 'Login',
+      // type: 'inside-app'
+    // }, 'inside-app');
+    /* this._c['launcher'].get('login-app').open(); */
   },
 
   // The cb_ should be called at the end of this function
   //
   start: function(cb_) {
     console.log('starting');
-    // Load contents to all components EXCEPT Launcher and DeciceList
-    this.getCOMById('layout').load(this._USER_CONFIG.layout);
-    this.getCOMById('dock').load(this._USER_CONFIG.dock);
-    cb_(null);
+    this._DESKTOP_DIR = '/data/desktop';
+    var _this = this;
+    _global._dataOP.readDesktopConfig(function(err_, ret_) {
+      if(err_) return console.log(err_);
+      _this._USER_CONFIG = ret_;
+      // Load contents to all components EXCEPT Launcher and DeciceList
+      _this.getCOMById('layout').load(_this._USER_CONFIG.layout);
+      _this.getCOMById('dock').load(_this._USER_CONFIG.dock);
+      _global._dataOP.readDesktopConfig(function(err_, ret_) {
+        if(err_) return console.log(err_);
+        _this._DEFAULT_APP = ret_;
+        _global._login.setCurState(true);
+        cb_.call(_this, null);
+      }, 'defaults.list');
+    }, 'Widget.conf');
   },
 
   // Put codes needed run afert started in this function
@@ -288,8 +312,15 @@ var DesktopModel = Model.extend({
     var _this = this;
     setTimeout(function() {
       _this.getCOMById('launcher').load();
-      cb_(null);
+      if(typeof cb_ === 'function') cb_.call(_this, null);
     }, 2000);
+  },
+
+  logout: function() {
+    for(var key in this._c) {
+      this._c[key].release();
+    }
+    this.login();
   },
 
   save: function() {
@@ -303,7 +334,6 @@ var DesktopModel = Model.extend({
   },
 
   initLayout: function() {
-    
   },
 
   getLayoutType: function() {return this._layoutType;},
@@ -472,8 +502,8 @@ var DockModel = Model.extend({
       }
       this.add(model);
     }
-    /* _global.get('utilIns').entryUtil.loadEntrys(lastSave, this._dockWatch.getBaseDir() */
-      /* , this._dockWatch, this); */
+    
+    // TODO: watch on app's unregister event
   },
 
   save: function() {
@@ -507,7 +537,11 @@ var DockModel = Model.extend({
   },
 
   release: function() {
-    this._dockWatch.close();
+    // this._dockWatch.close();
+    for(var key in this._c) {
+      this.remove(this._c[key]);
+    }
+    // TODO: unwatch on app's unregister event
   },
 
   // TODO: remove these code when not needed
@@ -806,6 +840,10 @@ var InsideAppEntryModel = EntryModel.extend({
       throw 'Bad type of startUpPera_, should be undefined or Array';
     }
     this.callSuper(id_, parent_, path_, position_);
+    if(iconPath_.match(/^[\/]/) == null) {
+      iconPath_ = path_ + '/' +  iconPath_;
+      if(path_.match(/^[\/]/) == null) iconPath_ = _global._appBase + '/' + iconPath_;
+    }
     this.setImgPath(iconPath_);
     this._startUpCtx = startUpContext_ || this;
     this._startUp = startUp_;
@@ -1358,10 +1396,27 @@ var LauncherModel = Model.extend({
   init: function(parent_) {
     this.callSuper('launcher', parent_);
     // this._appCache = Cache.create(); // caches app models
+    var _this = this;
+    this.__h = function(err_, last_, state_) {
+      if(err_) {
+        console.log(err_);
+        return ;
+      }
+      var loginM = _this.getCOMById('login-app');
+      if(state_) {
+        loginM.setImgPath('img/Logout-icon.png');
+        loginM.setName('Logout');
+      } else {
+        loginM.setImgPath('img/Login-icon.png');
+        loginM.setName('Login');
+      }
+    };
   },
 
   load: function() {
-    var _this = this;
+    var _this = this,
+        ws = _global.get('ws');
+    // load all installed normal App
     _global._dataOP.getAllDesktopFile(function(err_, files_) {
       if(err_) return console.log(err_);
       for(var key in files_) {
@@ -1376,6 +1431,51 @@ var LauncherModel = Model.extend({
         }
       }
     });
+    // load all register HTML5 App
+    _global._app.getRegisteredApp(function(err_, list_) {
+      if(err_) return console.log(err_);
+      for(var i = 0; i < list_.length; ++i) {
+        try {
+          _this.get(list_[i]);
+        } catch(e) {
+          _global._app.getRegisteredAppInfo(function(err_, info_) {
+            if(err_) return console.log(err_);
+            _this.createAModel(info_, 'inside-app');
+          }, list_[i]);
+        }
+      }
+    });
+    // register a listener for app
+    _this.__appListener = function(data_) {
+      if(typeof data_ !== 'object') return console.log(data_);
+      // add or remove a new app in launcher
+      if(data_.event == 'register') {
+        _global._app.getRegisteredAppInfo(function(err_, info_) {
+          if(err_) return console.log(err_);
+          var model = _this.createAModel(info_, 'inside-app');
+          if(data_.option.desktop) {
+            model.setPosition(data_.option.pos);
+            model.linkToDesktop();
+          }
+          if(data_.option.dock) model.linkToDock();
+        }, data_.appID);
+      } else if(data_.event == 'unregister') {
+        var model = _this._c[data_.appID],
+            layout = _this._parent.getCOMById('layout').getLayouts(),
+            dock = _this._parent.getCOMById('dock');
+        for(var key in layout) {
+          layout[key].remove(model);
+        }
+        dock.remove(model);
+        _this.remove(model);
+      }
+    };
+    _global._app.addListener(function(err_) {
+      if(err_) console.log('add listener for app:', err_);
+    }, _this.__appListener, ws.getConnection());
+    if(!ws.isLocal()) {
+      ws.on('app', _this.__appListener);
+    }
   },
 
   get: function(id_) {
@@ -1395,7 +1495,18 @@ var LauncherModel = Model.extend({
   },
 
   release: function() {
-    // TODO: release all child conponts
+    // release all child conponts
+    for(var key in this._c) {
+      this.remove(this._c[key]);
+    }
+    var _this = this,
+        ws = _global.get('ws');
+    _global._app.removeListener(function(err_) {
+      if(err_) console.log('remove listener for app:', err_);
+    }, _this.__appListener, ws.getConnection());
+    if(!ws.isLocal()) {
+      ws.off('app', _this.__appListener);
+    }
   },
 
   show: function() {
@@ -1405,46 +1516,19 @@ var LauncherModel = Model.extend({
   createAModel: function(attr_, type_) {
     var model = null;
     if(type_ == 'app') {
-      // attr_:
-      // 0 -> id
-      // 1 -> path
-      // 2 -> index in dock(if have)
-      // 3 -> position in desktop(if have)
       model = AppEntryModel.create(attr_.id, this, attr_.path, attr_.idx, attr_.position);
       this.set(model);
     } else if(type_ == 'inside-app') {
-      // attr_:
-      // 0 -> id
-      // 1 -> path of app package
-      // 2 -> iconpath
-      // 3 -> name of app
-      // 4 -> type
-      // 5 -> index in dock(if have)
-      // 6 -> position in desktop(if have)
       switch(attr_.id) {
         case 'launcher-app':
-          // var launcher = _global.get('desktop').getCOMById('launcher');
           model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
               this, this.show, [], attr_.name, attr_.idx, attr_.position);
           break;
-        case 'login-app': 
-          var login = LoginModel.create();
+        case 'login-app':
+          var login = _global._login;
           this.emit('add-login-app', null, login);
           var _this = this;
-          login.on('login-state', function(err_, state_) {
-            if(err_) {
-              console.log(err_);
-              return ;
-            }
-            var loginM = _this.getCOMById('login-app');
-            if(state_) {
-              loginM.setImgPath('img/Logout-icon.png');
-              loginM.setName('Logout');
-            } else {
-              loginM.setImgPath('img/Login-icon.png');
-              loginM.setName('Login');
-            }
-          });
+          login.off('login-state', _this.__h).on('login-state', _this.__h);
           model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
               login, login.login, [], attr_.name, attr_.idx, attr_.position);
           break; 
@@ -1463,14 +1547,21 @@ var LauncherModel = Model.extend({
   },
 
   startUp: function(id_) {
-    this.emit('start-up', null, this.getCOMById(id_));
+    // this.emit('start-up', null, this.getCOMById(id_));
+    _global._app.getRegisteredAppInfo(function(err_, info_) {
+      if(err_) return console.log(err_);
+      _global._app.startApp/* ByID */(function(obj) {
+        if(obj) {
+          // TODO: add this window to window manager
+        }
+      }, info_, null);
+    }, id_);
   }
 });
 
 var DeviceListModel = Model.extend({
   init: function(parent_) {
     this.callSuper('device-list', parent_);
-    this._imChatWinList = {}; 
   },
 
   release: function() {
@@ -1480,6 +1571,9 @@ var DeviceListModel = Model.extend({
     _global._device.removeListener(this._hID, ws.getConnection());
     if(!ws.isLocal()) {
       ws.off('device', this.__handler);
+    }
+    for(var key in this._c) {
+      this.remove(this._c[key]);
     }
     // _global._device.deviceDown();
   },
@@ -1571,41 +1665,28 @@ var DeviceListModel = Model.extend({
     // _global._device.createServer(function() {
       // _global._device.entryGroupCommit('demo-webde', '80', ['demo-webde:', 'hello!']);
     /* }); */
-
     // TODO: for IM, emit 'message' event when recive a message
-    /* _global._imV.startIMChatServer(function(msgobj) { */
-      // var toAccount = msgobj.MsgObj.from;
-      // var curEditBox = _this._imChatWinList['imChatWin_'+toAccount];
-      // if(curEditBox===undefined){
-        // Messenger().post({
-          // message: toAccount + '给你发新消息啦！',
-          // type: 'info',
-          // actions: {
-            // close: {
-              // label: '取消闪烁',
-              // action: function() {
-                // Messenger().hideAll()
-              // }
-            // },
-            // open: {
-              // label: '查看',
-              // action: function() {
-                // Messenger().hideAll();
-                // var toAccountInfo = {};
-                // toAccountInfo['toAccount'] = toAccount;
-                // toAccountInfo['toIP'] = msgobj.IP;
-                // toAccountInfo['toUID'] = msgobj.MsgObj.uuid;
-                // toAccountInfo['msg'] = msgobj.MsgObj.message;
-                // curEditBox = EditBox.create(toAccountInfo,_this._imChatWinList);
-                // _this._imChatWinList['imChatWin_'+toAccount] = curEditBox;
-              // }
-            // }
-          // }
-        // });
-      // } else {
-        // curEditBox.showRec(toAccount,msgobj.MsgObj.message);
-      // }
-    /* }); */
+    _global._imV.RegisterApp(function(recMsg) {
+      var toAccount = recMsg.MsgObj.from;
+      var fileMsg = recMsg.MsgObj['message'];
+      var toAccountInfo = {};
+      toAccountInfo['toAccount'] = toAccount;
+      toAccountInfo['toIP'] = recMsg.IP;
+      toAccountInfo['toUID'] = recMsg.MsgObj.uuid;
+      var toAccInfo = {};
+      toAccInfo['toAccount'] = toAccount;
+      toAccInfo['toUID'] = recMsg.MsgObj.uuid;
+      toAccInfo['toIP'] = recMsg.IP;
+      toAccInfo['onLineFlag'] = 1;
+      var toAccounts = {};
+      toAccounts[toAccount+recMsg.MsgObj.uuid] = toAccInfo;
+      toAccountInfo['toAccList'] = toAccounts;
+      try {
+        fileMsg = JSON.parse(fileMsg);
+      } catch (e) {}
+      toAccountInfo['msg'] = fileMsg;
+      _this.emit('imMsg', toAccountInfo);
+    }, 'imChat');
   }
 });
 
@@ -1620,7 +1701,6 @@ var AccountEntryModel = EntryModel.extend({
     this._type = 'account';
     this._imgPath = 'img/user.png';
     this.realInit(callback_);
-    this._imChatWinList = {}; 
   },
 
   realInit: function(cb_) {
@@ -1629,10 +1709,52 @@ var AccountEntryModel = EntryModel.extend({
     cb(null);
   },
 
-  open: function() {
+  open: function(cb_) {
+    var _this = this;
+    _this.initImChatParseFunc(function(toAccountInfo) {
+      _this.emit('openImChat', toAccountInfo, cb_);
+    });
   },
 
-  copyTo: function() {
+  copyTo: function(dataTransfer, entryIds_, cb_) {
+    var filePaths = [];
+    if (dataTransfer.files.length != 0) {
+      for (var i = 0; i < dataTransfer.files.length; ++i) {
+        filePaths.push(dataTransfer.files[i].path);
+      }
+      cb_(filePaths);
+      return;
+    }
+
+    if (entryIds_.length == 0)
+      entryIds_.push(dataTransfer.getData('ID'));
+    for (var i = 0; i < entryIds_.length; ++i) {
+      var desktop = _global.get('desktop'),
+      item = desktop.getCOMById('layout').getCurLayout().getWidgetById(entryIds_[i]);
+      filePaths.push(item.getPath());
+    }
+    cb_(filePaths);
+  },
+
+  initImChatParseFunc: function(cb_) {
+    var toAccount = this._position['txt'][1];
+    var toAccountInfo = {};
+    toAccountInfo['toAccount'] = toAccount;
+    toAccountInfo['toIP'] = this._position['address'];
+    toAccountInfo['toUID'] = '';
+    var toAccounts = {};
+    var toAccInfo = {};
+    var deviceList = this.getAllCOMs();
+    for (var key in deviceList) {
+      var accountItem = deviceList[key];
+      toAccInfo['toAccount'] = accountItem._position['txt'][1];
+      toAccInfo['toUID'] = accountItem._position['txt'][2];
+      toAccInfo['toIP'] = accountItem._position['address'];
+      toAccInfo['onLineFlag'] = 1;
+      toAccounts[accountItem._position['txt'][1]+accountItem._position['txt'][2]] = toAccInfo;
+    }
+    toAccountInfo['toAccList'] = toAccounts;
+    cb_(toAccountInfo);
   }
 });
 
@@ -1656,34 +1778,48 @@ var DeviceEntryModel = EntryModel.extend({
   },
 
   // TODO: show something about this device
-  open: function() {
-    var toAccount = this._position['txt'][5];
-    var toAccountInfo = {};
-    toAccountInfo['toAccount'] = this._position['txt'][5];;
-    toAccountInfo['toIP'] = this._position['txt'][4];
-    toAccountInfo['toUID'] = this._position['txt'][1];
-    var curEditBox = EditBox.create(toAccountInfo, this._parent._imChatWinList);
-    this._parent._imChatWinList['imChatWin_'+toAccount] = curEditBox;
+  open: function(cb_) {
+    var _this = this;
+    _this.initImChatParseFunc(function(toAccountInfo) {
+      _this.emit('openImChat', toAccountInfo, cb_);
+    });
   },
 
   // send a file to remote device
-  copyTo: function(dataTransfer, entryIds_) {
-    if(dataTransfer.files.length != 0) {
-      for(var i = 0; i < dataTransfer.files.length; ++i) {
-        Messenger().post(dataTransfer.files[i].path);
-        // TODO: use api from lower layer
+  copyTo: function(dataTransfer, entryIds_, cb_) {
+    var filePaths = [];
+    if (dataTransfer.files.length != 0) {
+      for (var i = 0; i < dataTransfer.files.length; ++i) {
+        filePaths.push(dataTransfer.files[i].path);
       }
-      return ;
+      cb_(filePaths);
+      return;
     }
-   
-    if(entryIds_.length == 0) 
+
+    if (entryIds_.length == 0)
       entryIds_.push(dataTransfer.getData('ID'));
-    for(var i = 0; i < entryIds_.length; ++i) {
+    for (var i = 0; i < entryIds_.length; ++i) {
       var desktop = _global.get('desktop'),
-          item = desktop.getCOMById('layout').getCurLayout().getWidgetById(entryIds_[i]);
-      Messenger().post(item.getPath());
-      // TODO: use api from lower layer
+      item = desktop.getCOMById('layout').getCurLayout().getWidgetById(entryIds_[i]);
+      filePaths.push(item.getPath());
     }
+    cb_(filePaths);
+  },
+  initImChatParseFunc: function(cb_) {
+    var toAccount = this._position['txt'][1];
+    var toAccountInfo = {};
+    toAccountInfo['toAccount'] = toAccount;
+    toAccountInfo['toIP'] = this._position['address'];
+    toAccountInfo['toUID'] = this._position['txt'][2];
+    var toAccInfo = {};
+    toAccInfo['toAccount'] = toAccount;
+    toAccInfo['toUID'] = this._position['txt'][2];
+    toAccInfo['toIP'] = this._position['address'];
+    toAccInfo['onLineFlag'] = 1;
+    var toAccounts = {};
+    toAccounts[toAccount+this._position['txt'][2]] = toAccInfo;
+    toAccountInfo['toAccList'] = toAccounts;
+    cb_(toAccountInfo);
   }
 });
 
@@ -1699,8 +1835,6 @@ var LayoutModel = WidgetModel.extend({
     this._width = 0;//$(document).width();
     this._height = 0;//$(document).height() * 0.9;
   },
-
-  release: function() {},
 
   getType: function() {return this._type;},
 
@@ -1782,9 +1916,6 @@ var WidgetManager = Model.extend({
   },
 
   load: function(conf_) {
-    // load theme entry
-    _global.get('theme').loadThemeEntry(this);
-   
     // load inside app entry, just a temporary solution.
     // should load all user config data on desktop._USER_CONFIG
     // and get data by key-value style.
@@ -1795,70 +1926,10 @@ var WidgetManager = Model.extend({
       try {
         model = launcher.get(conf_.insideApp[key].id);
       } catch(e) {
-        model = launcher.createAModel(/* { */
-          // '0': conf_.insideApp[key].id,
-          // '1': conf_.insideApp[key].path,
-          // '2': conf_.insideApp[key].iconPath,
-          // '3': conf_.insideApp[key].name,
-          // '4': conf_.insideApp[key].type,
-          // '5': conf_.insideApp[key].idx,
-          // '6': conf_.insideApp[key].position
-        /* } */conf_.insideApp[key], conf_.insideApp[key].type);
+        model = launcher.createAModel(conf_.insideApp[key], conf_.insideApp[key].type);
       }
       this.add(model);
     }
-    // replace with demo-rio's API
-    /* var _this = this; */
-    // _global._fs.readFile(_global.$xdg_data_home + "/inside-app.conf"
-      // , 'utf-8', function(err, data) {
-        // if(err) {
-          // console.log(err);
-        // } else {
-          // var model,
-              // launcher = _global.get('desktop').getCOMById('launcher'),
-              // apps = data.split('\n');
-          // for(var i = 0; i < apps.length; ++i) {
-            // if(apps[i].match('[\s,\t]*#+') != null || apps[i] == "") continue;
-            // var pera = apps[i].split('$');
-            // try {
-              // model = launcher.get(pera[0]);
-            // } catch(e) {
-              // model = launcher.createAModel(pera, 'inside-app');
-            // }
-            // _this.add(model);
-          // }
-        // }
-      /* }); */
-    
-    // load desktop entry
-    // replace with demo-rio's API
-    /* var _lastSave = [], */
-        // desktop = _global.get('desktop'),
-        // lines = desktop._USER_CONFIG.split('\n');
-    // for(var i = 0; i < lines.length; ++i) {
-      // if(lines[i].match('[\s,\t]*#+') != null) continue;
-      // if(lines[i] == "") continue;
-      // var attr = lines[i].split('$');
-      // if(attr.length != 5) continue;
-      // var _plugin = null;
-      // switch(attr[4]) {
-        // case "ClockPlugin":
-        // case "ImagePlugin":
-          // _plugin = DPluginModel.create(attr[0], this._parent, attr[1], attr[4]
-              // , {x: attr[2], y: attr[3]});
-          // break;
-        // default:
-          // _lastSave[attr[0]] = {
-            // path: attr[1],
-            // x: attr[2],
-            // y: attr[3],
-            // type: attr[4]
-          // };  
-      // }
-      // if (_plugin != null) {
-        // this.add(_plugin);  
-      // } 
-    /* } */
 
     // handle plugins
     for(var key in conf_.plugin) {
@@ -1904,27 +1975,11 @@ var WidgetManager = Model.extend({
       }
       this.add(model);
     }
-    /* _global.get('utilIns').entryUtil.loadEntrys(_lastSave, desktop._desktopWatch.getBaseDir()    */
-        /* , desktop._desktopWatch, this._parent);    */
+    
+    // TODO: watch on app's unregister event
   },
 
   save: function(conf_) {
-    /* var data = ""; */
-    // for(var key in this._c) {
-      // if(typeof theme._theme[key] !== 'undefined') continue;
-      // data += key + "$" + this._c[key]._path + "$"
-         // + this._c[key]._position.x + "$"
-         // + this._c[key]._position.y + "$"
-        // + this._c[key]._type + '\n';
-    // }
-    // //console.log(data);
-    // this._fs.writeFile(_global.$xdg_data_home + "/widget.conf"
-        // , data, function(err) {
-      // if(err) {
-        // console.log(err);
-      // }
-    /* }); */
-
     // save theme entry
     _global.get('theme').saveConfig();
     
@@ -1965,6 +2020,8 @@ var WidgetManager = Model.extend({
     conf_.plugin = plugin;
     conf_.dentry = dentry;
   }
+    
+  // TODO: unwatch on app's unregister event
 });
 
 var GridModel = LayoutModel.extend({
@@ -1980,8 +2037,6 @@ var GridModel = LayoutModel.extend({
     this._row_num = 0; //Math.floor(this._height / this._row);
     this._grid = [];
   },
-
-  release: function() {},
 
   setSize: function(size_) {
     this.callSuper(size_);
@@ -2207,9 +2262,12 @@ var LayoutManager = Model.extend({
           this.add(grid, true);
           grid.load(conf_.widget[i]);
         }
-        var layout = desktop.getCOMById('layout');
-        layout.setMain(conf_.main);
-        layout.setCur(conf_.main);
+        // var layout = desktop.getCOMById('layout');
+        this._parent.setMain(conf_.main);
+        this._parent.setCur(conf_.main);
+        
+        // load theme entry
+        _global.get('theme').loadThemeEntry(this);
         break;
       default:
         break;
@@ -2246,8 +2304,24 @@ var LayoutManager = Model.extend({
     this.emit('add', null, layout_, init_);
   },
 
-  remove: function(idx_) {
-    this._c.splice(idx_, 1);
+  remove: function(layout_) {
+    this.emit('remove', null, layout_);
+    var id = layout_.getID();
+    for(var i = 0; i < this._c.length; ++i) {
+      if(this._c[i].getID() == id) {
+        this._c.splice(i, 1);
+        if(this._c.length != 0) {
+          if(i < this._c.length) {
+            this._parent.setCur(i);
+          } else {
+            this._parent.setCur(i - 1);
+          }
+        } else {
+          this._parent.setCur(-1);
+        }
+        break;
+      }
+    }
   }
 });
 
@@ -2256,6 +2330,12 @@ var FlipperModel = LayoutModel.extend({
     this.callSuper(id_, parent_, Manager_, 'flipper');
     this._cur = -1;
     this._main = 0;
+  },
+
+  release: function() {
+    while(this._wm._c.length != 0) {
+      this.remove(this._wm._c[0]);
+    }
   },
 
   getCur: function() {return this._cur;},
@@ -2267,7 +2347,9 @@ var FlipperModel = LayoutModel.extend({
     this._cur = cur_;
   },
 
-  getNum: function() {return this._wm._c;},
+  getNum: function() {return this._wm._c.length;},
+
+  getLayouts: function() {return this._wm._c;},
 
   getCurLayout: function() {
     return this._wm._c[this._cur];
@@ -2305,25 +2387,34 @@ var LoginModel = Model.extend({
   },
 
   doLogin: function(account_, password_) {
-    // TODO: call API to login
-    var _this = this;
-    _global._account.accountLogin(function(ret_) {
-      if(ret_.type == 'error') return console.log('login error:', ret_.msg);
-      if(ret_.state == 1) {
-        _this.setCurState(true);
-      } else {
-        _this.emit('login-state', null, false, ret_.msg);
-      }
-    }, {
-      'account': account_,
-      'passwd': password_
-    });
+    // call API to login
+    /* var _this = this; */
+    // _global._account.accountLogin(function(ret_) {
+      // if(ret_.type == 'error') return console.log('login error:', ret_.msg);
+      // if(ret_.state == 1) {
+        // _this.setCurState(true);
+        // var desktop = _global.get('desktop'),
+        /*     launcher = desktop.getCOMById('launcher'); */
+        // desktop.start.call(desktop, desktop.postStart);
+        // launcher.remove(launcher.get('login-app'));
+        /* this.off(); */
+      // } else {
+        // _this.emit('login-state', null, false, ret_.msg);
+      // }
+    // }, {
+      // 'account': account_,
+      // 'passwd': password_
+    /* }); */
     // replace with real API
-    /* console.log(account_, password_); */
-    // var _this = this;
-    // _this._to = setTimeout(function() {
-      // _this.setCurState(true);
-    /* }, 3000); */
+    console.log(account_, password_); 
+    var _this = this;
+    _this._to = setTimeout(function() {
+      _this.setCurState(true);
+      var desktop = _global.get('desktop');
+      desktop.getCOMById('layout').release();
+      // _this.off();
+      desktop.start.call(desktop, desktop.postStart);
+    }, 3000); 
   },
 
   cancelLogin: function() {
@@ -2334,6 +2425,9 @@ var LoginModel = Model.extend({
   doLogout: function() {
     // TODO: call API to logout
     this.setCurState(false);
+    // this.off();
+    var desktop = _global.get('desktop');
+    desktop.logout.call(desktop);
   },
 
   doRegist: function(account_, password_) {
@@ -2361,8 +2455,8 @@ var LoginModel = Model.extend({
   getCurState: function() {return this._login;},
 
   setCurState: function(state_) {
+    this.emit('login-state', null, this._login, state_);
     this._login = state_;
-    this.emit('login-state', null, this._login);
   }
 });
 

@@ -5,6 +5,7 @@ var Unslider = Class.extend({
       speed: false,
       delay: 3000,
       complete: false,
+      begin:false,
       keys: true,
       dots: false,
       fluid: false
@@ -41,20 +42,26 @@ var Unslider = Class.extend({
     var _this = this;
     this._obj.css({
       overflow: 'hidden',
-      width: _this._max[0],
-      height: _this._items.first().outerHeight()
+      width: '100%',
+      height: '100%'
     });
 
     _this._ul.css({
       width: (_this._items.length * 100) + '%',
+      height:'100%',
       position: 'relative'
     });
     _this._items.css({
-      width: (100 / _this._items.length)+'%'
+      width: (100 / _this._items.length)+'%',
+      height:'100%'
     })
     if (this._options.delay !== false) {
       _this.start();
-      _this._obj.hover(_this.stop,_this.start);
+      _this._obj.hover(function(){
+        _this.stop(_this);
+      },function(){
+        _this.start(_this);
+      });
     };
     _this._options.keys && _this.keys();
     _this._options.dots && _this.dots();
@@ -78,27 +85,38 @@ var Unslider = Class.extend({
     if (!_this._items.eq(index_).length) {index_ = 0};
     if (index_ < 0) { index_ = (_this._items.length -1 ) };
     var _target = _this._items.eq(index_);
-    var _hobj = {height: _target.outerHeight()};
+    var _hobj = {height: '100%'};
     var speed = cb_ ? 5 :_this._options.speed;
-
+    if(_this._options.begin){
+      _this._options.begin(index_);
+    }
     if (!this._ul.is(':animated')) {
       _this._obj.find('.dot:eq(' + index_ + ')').addClass('active').siblings().removeClass('active');
       _this._obj.animate(_hobj, speed);
-      _this._ul.animate({left: '-' + index_ + '00%', height: _target.outerHeight()}, speed, function(data){
+      _this._ul.animate({left: '-' + index_ + '00%', height: '100%'}, speed, function(data){
         _this._current = index_;
+        if (_this._options.complete) {
+          _this._options.complete(index_);
+        };
       });
     };
   },
 
-  start:function(){
+  start:function(this_){
     var _this = this;
+    if (this_) {
+      _this = this_;
+    };
     _this._interval = setInterval(function(){
       _this.move(_this._current +1);
     }, _this._options.delay);
   },
 
-  stop:function(){
+  stop:function(this_){
     var _this = this;
+    if (this_) {
+      _this = this_;
+    };
     _this._interval = clearInterval(_this._interval);
   },
 

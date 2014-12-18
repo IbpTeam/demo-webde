@@ -304,25 +304,33 @@ var Global = Class.extend({
       'Utility': 'Utility',
       'Other': 'Other'
     };
-    this._logining = false;
     // manage opened inside-app windows
     this._openingWindows = WindowManager.create();
+    this._login = LoginModel.create();
     this.objects = [];
     
     var _this = this;
     this.Series.series([
       {
         fn: function(pera_, cb_) {
-          // replace the nodejs'API with ourselves
-          // _this._fs = require('fs');
-          // _this._exec = require('child_process').exec;
-          WDC.requireAPI(['device_service', 'IM', 'data'/* , 'account' */]
-            , function(dev, imV, data/* , acc */) {
+          // change the nodejs'API to ourselves
+          /* _this._fs = require('fs'); */
+          /* _this._exec = require('child_process').exec; */
+          WDC.requireAPI(['device_service', 'IM', 'data', 'app'/* , 'account' */]
+            , function(dev, imV, data, app/* , acc */) {
               _this._device = dev;
               _this._imV = imV;
               _this._dataOP = data;
+              _this._app = app;
               // _this._account = acc;
-              cb_(null);
+
+              data.initDesktop(function(err_, success_) {
+                if(err_) return console.log(err_);
+                app.getBasePath(function(err_, basePath_) {
+                  _this._appBase = basePath_;
+                  cb_(null);
+                });
+              })
             });
         }
       },
@@ -734,48 +742,48 @@ var EntryUtil = Event.extend({
       if(err) throw 'util.js-rmFile: bad path';
     }, 'rm '+path_);
   },
-	/**
-	 * [getRelevantAppName : get relevant app's name ]
-	 * @param  {string} mimeTypes_: xdg type
-	 * @param  {function} callback_(err, name);
-	 * @return {callbask_}
-	 */
-	getRelevantAppName: function(mimeTypes_, callback_) {
-		var _path = '/usr/share/applications/';
-		this.parseDesktopFile(_path + 'mimeinfo.cache', function(err_, file_) {
-			if(err_) { 
-				console.log(err_);
-				return ;
-			}
-			var _relevantAppNames = [];
-			for(var i = 0; i < mimeTypes_.length; i++) {
-				if(typeof file_[mimeTypes_[i]] !== 'undefined') {
-					var _appNames = file_[mimeTypes_[i]].split(';');
-					$.merge(_relevantAppNames, _appNames);
-				}
-			};
-			$.unique(_relevantAppNames);
-			if(_relevantAppNames.length == 0) 
-				return callback_.call(this, 'Unknown relevant App!');
-			return callback_.call(this, null, _relevantAppNames);
-		});
-	},
+  /**
+   * [getRelevantAppName : get relevant app's name ]
+   * @param  {string} mimeTypes_: xdg type
+   * @param  {function} callback_(err, name);
+   * @return {callbask_}
+   */
+  getRelevantAppName: function(mimeTypes_, callback_) {
+    var _path = '/usr/share/applications/';
+    this.parseDesktopFile(_path + 'mimeinfo.cache', function(err_, file_) {
+      if(err_) { 
+        console.log(err_);
+        return ;
+      }
+      var _relevantAppNames = [];
+      for(var i = 0; i < mimeTypes_.length; i++) {
+        if(typeof file_[mimeTypes_[i]] !== 'undefined') {
+          var _appNames = file_[mimeTypes_[i]].split(';');
+          $.merge(_relevantAppNames, _appNames);
+        }
+      };
+      $.unique(_relevantAppNames);
+      if(_relevantAppNames.length == 0) 
+        return callback_.call(this, 'Unknown relevant App!');
+      return callback_.call(this, null, _relevantAppNames);
+    });
+  },
 /**
  * [isTextFile : check file is text or not]
  * @param  {string}  path_
  * @param  {function}  callback_(err, isText)
  * @return {callbask_}
  */
-	isTextFile:function(path_, callback_){
-		// this._exec('file '+ path_ + " | grep -E 'text|empty'", function(err_, out_ ,stderr_) {
-		_global._dataOP.shellExec(function(err_, out_ ,stderr_) {
-			if (out_ !== '' ) {
-				return callback_.call(this, null , true);
-			}else {
-				return callback_.call(this,null, false);
-			}
-		}, 'file '+ path_ + " | grep -E 'text|empty'");
-	},
+  isTextFile:function(path_, callback_){
+    // this._exec('file '+ path_ + " | grep -E 'text|empty'", function(err_, out_ ,stderr_) {
+    _global._dataOP.shellExec(function(err_, out_ ,stderr_) {
+      if (out_ !== '' ) {
+        return callback_.call(this, null , true);
+      }else {
+        return callback_.call(this,null, false);
+      }
+    }, 'file '+ path_ + " | grep -E 'text|empty'");
+  },
 /**
  * [getItemFromApp : read .desktop then  get name and exec to build Item]
  * @param  {string} filename_
@@ -1005,8 +1013,14 @@ var RemoteObserver = Model.extend({
   //
   init: function() {
     this.callSuper('ws');
-    var addr = ((arguments.length == 1) ? ('ws://' + location.host + '/ws') : arguments[0]);
-    this._local = ((location.host == '') ? true : false);
+    var addr = '';
+    if(location.host == '') {
+      this._local = true;
+      addr = ((arguments.length <= 1) ? ('ws://127.0.0.1:8888/ws') : arguments[0]);
+    } else {
+      this._local = false;
+      addr = ((arguments.length <= 1) ? ('ws://' + location.host + '/ws') : arguments[0]);
+    }
     try {
       this._ws = new WebSocket(addr);
       this._ws.onopen = function() {
@@ -1030,15 +1044,35 @@ var RemoteObserver = Model.extend({
     } catch(e) {
       console.log(e);
     }
-    arguments[arguments.length - 1].call(this, null);
+    if(typeof arguments[arguments.length - 1] === 'function')
+      arguments[arguments.length - 1].call(this, null);
   },
 
   getConnection: function() {return this._ws;},
+
+  // msg is a JSON object
+  send: function(msg) {
+    try {
+      this._ws.send(JSON.stringify(msg));
+    } catch(e) {
+      console.log('Send WebSocket Message Error:', e);
+    }
+    return this;
+  },
 
   __dispacher: function(msg) {
     if(msg.Status == 'error') return console.log(msg.Data);
     this.emit(msg.Event, msg.Data);
   },
 
-  isLocal: function() {return this._local;}
+  isLocal: function() {return this._local;},
+
+  close: function() {
+    try {
+      this._ws.close();
+    } catch(e) {
+      console.log(e);
+    }
+    return this;
+  }
 });
