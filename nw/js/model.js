@@ -992,16 +992,17 @@ var AppEntryModel = EntryModel.extend({
       /* utilIns.entryUtil.getIconPath(file_['Icon'], 48, function(err_, imgPath_) { */
       /* }); */
       // get name
-      if(typeof file_['Name[zh_CN]'] !== "undefined") {
-        _this.setName(file_['Name[zh_CN]']);
+      var locale = _global._locale.locale;
+      if(typeof file_['Name[' + locale + ']'] !== "undefined") {
+        _this.setName(file_['Name[' + locale + ']']);
       } else {
         _this.setName(file_['Name']);
       }
       // get comment
       _this._comment = file_['Comment'];
       // get genericName
-      if (typeof file_['GenericName[zh_CN]'] != 'undefined') {
-        _this._genericName = file_['GenericName[zh_CN]'];
+      if (typeof file_['GenericName[' + locale + ']'] != 'undefined') {
+        _this._genericName = file_['GenericName[' + locale + ']'];
       } else {
         _this._genericName = file_['GenericName'];
       }
@@ -1075,8 +1076,6 @@ var AppEntryModel = EntryModel.extend({
 
   open: function(pera_) {
     var p_ = pera_ || '';
-    // TODO: replace by API ourselves
-    // _global._exec(this._execCmd + p_, function(err, stdout, stderr) {
     _global._dataOP.shellExec(function(err, stdout, stderr) {
       if(err !== null) {
         console.log(err);
@@ -1086,8 +1085,6 @@ var AppEntryModel = EntryModel.extend({
 
   rename: function(name_) {
     if(name_ != this._name) {
-      // TODO: rename a app entry
-      //    send new name to Data Layer and rename this entry
       this.setName(name_);
     }
   },
@@ -1600,7 +1597,7 @@ var DeviceListModel = Model.extend({
     var _this = _global.get('desktop').getCOMById('device-list'),
         info = pera_.info,
         len = info.txt.length,
-        account_id_ = info.txt[len - 1];
+        account_id_ = info.txt[len - 2];
         dev_id_ = info.address + ':' + info.port;
     switch(pera_.flag) {
       case 'up':
@@ -1666,25 +1663,39 @@ var DeviceListModel = Model.extend({
       // _global._device.entryGroupCommit('demo-webde', '80', ['demo-webde:', 'hello!']);
     /* }); */
     // TODO: for IM, emit 'message' event when recive a message
-    _global._imV.RegisterApp(function(recMsg) {
+    _global._imV.registerApp(function(recMsg) {
       var toAccount = recMsg.MsgObj.from;
-      var fileMsg = recMsg.MsgObj['message'];
+      var msg = recMsg.MsgObj['message'];
       var toAccountInfo = {};
       toAccountInfo['toAccount'] = toAccount;
       toAccountInfo['toIP'] = recMsg.IP;
       toAccountInfo['toUID'] = recMsg.MsgObj.uuid;
       var toAccInfo = {};
-      toAccInfo['toAccount'] = toAccount;
-      toAccInfo['toUID'] = recMsg.MsgObj.uuid;
-      toAccInfo['toIP'] = recMsg.IP;
-      toAccInfo['onLineFlag'] = 1;
       var toAccounts = {};
-      toAccounts[toAccount+recMsg.MsgObj.uuid] = toAccInfo;
-      toAccountInfo['toAccList'] = toAccounts;
       try {
-        fileMsg = JSON.parse(fileMsg);
+        msg = JSON.parse(msg);
       } catch (e) {}
-      toAccountInfo['msg'] = fileMsg;
+      if(msg.group===''){
+        toAccInfo['toAccount'] = toAccount;
+        toAccInfo['toUID'] = recMsg.MsgObj.uuid;
+        toAccInfo['toIP'] = recMsg.IP;
+        toAccInfo['onLineFlag'] = 1;
+        toAccounts[recMsg.MsgObj.uuid] = toAccInfo;
+      }else{
+        _global._device.getDeviceByAccount(function(devs_) {
+          for(var j = 0; j < devs_.length; ++j) {
+            toAccInfo = {};
+            toAccInfo['toAccount'] = devs_[j].txt[1];
+            toAccInfo['toUID'] = devs_[j].txt[2];
+            toAccInfo['toIP'] = devs_[j].address;
+            toAccInfo['onLineFlag'] = 1;
+            toAccounts[devs_[j].txt[2]] = toAccInfo;
+          }
+        }, toAccount);  
+      }
+      toAccountInfo['toAccList'] = toAccounts;
+      toAccountInfo['msg'] = msg;
+      toAccountInfo['group'] = msg.group;
       _this.emit('imMsg', toAccountInfo);
     }, 'imChat');
   }
@@ -1742,20 +1753,43 @@ var AccountEntryModel = EntryModel.extend({
     toAccountInfo['toAccount'] = toAccount;
     toAccountInfo['toIP'] = this._position['address'];
     toAccountInfo['toUID'] = '';
+    toAccountInfo['group'] = toAccount;
     var toAccounts = {};
-    var toAccInfo = {};
     var deviceList = this.getAllCOMs();
     for (var key in deviceList) {
+      var toAccInfo = {};
       var accountItem = deviceList[key];
       toAccInfo['toAccount'] = accountItem._position['txt'][1];
       toAccInfo['toUID'] = accountItem._position['txt'][2];
       toAccInfo['toIP'] = accountItem._position['address'];
       toAccInfo['onLineFlag'] = 1;
-      toAccounts[accountItem._position['txt'][1]+accountItem._position['txt'][2]] = toAccInfo;
+      toAccounts[accountItem._position['txt'][2]] = toAccInfo;
     }
     toAccountInfo['toAccList'] = toAccounts;
     cb_(toAccountInfo);
-  }
+  },
+
+  getInterface: function() {return this._position.interface;},
+
+  getProtocol: function() {return this._position.protocol;},
+
+  getSType: function() {return this._position.stype;},
+
+  getDomain: function() {return this._position.domain;},
+
+  getHost: function() {return this._position.host;},
+
+  getAProtocol: function() {return this._position.aprotocol;},
+
+  getAddress: function() {return this._position.address;},
+
+  getPort: function() {return this._position.port;},
+
+  getAccount: function() {return this._position.txt[1];},
+
+  getUID: function() {return this._position.txt[2];},
+
+  getFlag: function() {return this._position.flag;}
 });
 
 var DeviceEntryModel = EntryModel.extend({
@@ -1805,22 +1839,46 @@ var DeviceEntryModel = EntryModel.extend({
     }
     cb_(filePaths);
   },
+
   initImChatParseFunc: function(cb_) {
     var toAccount = this._position['txt'][1];
     var toAccountInfo = {};
     toAccountInfo['toAccount'] = toAccount;
     toAccountInfo['toIP'] = this._position['address'];
     toAccountInfo['toUID'] = this._position['txt'][2];
+    toAccountInfo['group'] = '';
     var toAccInfo = {};
     toAccInfo['toAccount'] = toAccount;
     toAccInfo['toUID'] = this._position['txt'][2];
     toAccInfo['toIP'] = this._position['address'];
     toAccInfo['onLineFlag'] = 1;
     var toAccounts = {};
-    toAccounts[toAccount+this._position['txt'][2]] = toAccInfo;
+    toAccounts[this._position['txt'][2]] = toAccInfo;
     toAccountInfo['toAccList'] = toAccounts;
     cb_(toAccountInfo);
-  }
+  },
+
+  getInterface: function() {return this._position.interface;},
+
+  getProtocol: function() {return this._position.protocol;},
+
+  getSType: function() {return this._position.stype;},
+
+  getDomain: function() {return this._position.domain;},
+
+  getHost: function() {return this._position.host;},
+
+  getAProtocol: function() {return this._position.aprotocol;},
+
+  getAddress: function() {return this._position.address;},
+
+  getPort: function() {return this._position.port;},
+
+  getAccount: function() {return this._position.txt[1];},
+
+  getUID: function() {return this._position.txt[2];},
+
+  getFlag: function() {return this._position.flag;}
 });
 
 // The model class of Layout
