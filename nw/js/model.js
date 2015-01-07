@@ -197,8 +197,8 @@ var DesktopModel = Model.extend({
       },
       {
         fn: function(pera_, cb_) {
-          _this.login(cb_);
-          // _this.start(cb_);
+          // _this.login(cb_);
+          _this.start(cb_);
         }
       },
       {
@@ -206,12 +206,12 @@ var DesktopModel = Model.extend({
           callback_.call(this, null);
           cb_(null);
         }
-      }/* ,change the start sequence */
-      // {
-        // fn: function(pera_, cb_) {
-          // _this.postStart(cb_);
-        // }
-      /* } */
+      },/* ,change the start sequence */
+      {
+        fn: function(pera_, cb_) {
+          _this.postStart(cb_);
+        }
+       } 
     ]);
   },
 

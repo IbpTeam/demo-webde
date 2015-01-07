@@ -86,9 +86,9 @@ var DesktopView = View.extend({
           _this._c['layout'].getCurView()._controller.onAddFile(ret_[0], ret_[1]);
         });
       }},
-      {text: lang['script'], subMenu: [
-        {header: 'script'}
-      ]},
+      // {text: lang['script'], subMenu: [
+      //   {header: 'script'}
+      // ]},
       {divider: true},
       {text: lang['terminal'], icon: 'icon-terminal', action: function(e) {
         e.preventDefault();
@@ -113,7 +113,7 @@ var DesktopView = View.extend({
         location.reload(true);
       }},
       {divider: true},
-      {text: lang['window'], action: function() {
+      /*{text: lang['window'], action: function() {
         Window.create('newWin','Test Window ', {
           left:200,
           top:100,
@@ -150,7 +150,7 @@ var DesktopView = View.extend({
         }).onfocus(function() {
           _global._openingWindows.focusOnAWindow(this._id);
         });
-      }},
+      }},*/
       {text: 'datamgr', action: function() {
         WDC.requireAPI(['app'], function(app){
           app.startAppByName(function(){}, "datamgr", null);
@@ -166,7 +166,7 @@ var DesktopView = View.extend({
             ctxMenu.disableItem('add-plugin', 'clock');
           }
         }}
-      ]},
+      ]} ,
       {text: lang['messenger_set'], icon: 'icon-cog', subMenu:[
         {header: 'messenger set'},
         {text: lang['position'], subMenu:[
@@ -220,10 +220,11 @@ var DesktopView = View.extend({
             }
           }}
         ]}
-      ]},
-      {text: lang['switch_motion'], subMenu: [
-        {header: 'switch motion'}
       ]}
+      // ,
+      // {text: lang['switch_motion'], subMenu: [
+      //   {header: 'switch motion'}
+      // ]}
     ]);
 
     var /* layout = desktop.getCOMById('layout').getCurLayout(), */
@@ -401,7 +402,7 @@ var DesktopView = View.extend({
           /* }); */
 
           // get layout switch motion
-          var motions = _this._c['layout'].getMotions(),
+         /* var motions = _this._c['layout'].getMotions(),
               sMenu = ctxMenu.getMenuByHeader('switch motion');
           for(var key in motions) {
             var item = {
@@ -413,7 +414,7 @@ var DesktopView = View.extend({
             };
             if(!ctxMenu.hasItem(sMenu, item))
               ctxMenu.addItem(sMenu, item);
-          }
+          }*/
         });
   }
 });
@@ -3188,7 +3189,7 @@ var FlipperView = View.extend({
       _this._controller.onAdd();
     });
 
-    $(document).on('keydown', 'html', function(e) {
+    /*$(document).on('keydown', 'html', function(e) {
       var switchTo = function(i) {
         if(i >= _this._c.length) return ;
         var $switchers = _this.$view.find('.view-switcher');
@@ -3252,7 +3253,7 @@ var FlipperView = View.extend({
         default:
           break;
       }
-    });
+    });*/
   },
 
   show: function($parent) {
