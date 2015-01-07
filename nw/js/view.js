@@ -65,19 +65,6 @@ var DesktopView = View.extend({
         _this = this;
     ctxMenu.addCtxMenu([
       {header: 'desktop'},
-      // TODO: comment for temporary
-      /* {text: 'create Dir', icon: 'icon-folder-1', action: function(e) { */
-        // e.preventDefault();
-        // var layout = desktop.getCOMById('layout').getCurLayout();
-        // for (var i = 0; ; i++) {
-          // // replace with logistic directory
-          // if(layout.getWidgetByAttr('_name', 'New Folder ' + i) != null) continue;
-          // var d = new Date();
-          // _this._c['layout'].getCurView()._controller.onAddFolder('/desktop/New Folder ' + i
-            // , 'folder' + d.getTime());
-          // break; 
-        // }
-      /* }}, */
       {text: lang['c_txt'], icon: 'icon-doc-text', action: function(e){
         e.preventDefault();
         // change to demo-rio's API
@@ -86,9 +73,6 @@ var DesktopView = View.extend({
           _this._c['layout'].getCurView()._controller.onAddFile(ret_[0], ret_[1]);
         });
       }},
-      // {text: lang['script'], subMenu: [
-      //   {header: 'script'}
-      // ]},
       {divider: true},
       {text: lang['terminal'], icon: 'icon-terminal', action: function(e) {
         e.preventDefault();
@@ -109,48 +93,7 @@ var DesktopView = View.extend({
         // TODO: only reload views
         location.reload();
       }},
-      {text: lang['refresh'] + ' (F5)', icon: 'icon-spin3 animate-spin', action: function(e) {
-        location.reload(true);
-      }},
       {divider: true},
-      /*{text: lang['window'], action: function() {
-        Window.create('newWin','Test Window ', {
-          left:200,
-          top:100,
-          height: 400,
-          width: 700,
-          fadeSpeed: 500,
-          animate: false
-        }, function() {
-          this.getID = function() {return this._id;};
-          _global._openingWindows.add(this);
-          var _this = this;
-          this.bindCloseButton(function() {
-            _global._openingWindows.remove(_this);
-          });
-        }).onfocus(function() {
-          _global._openingWindows.focusOnAWindow(this._id);
-        });
-      }},
-      {text: lang['window'] + '2', action: function() {
-        Window.create('newWin2','Test Window2!', {
-          left:400,
-          top:300,
-          height: 500,
-          width: 800,
-          fadeSpeed: 500,
-          animate: true
-        }, function() {
-          this.getID = function() {return this._id;};
-          _global._openingWindows.add(this);
-          var _this = this;
-          this.bindCloseButton(function() {
-            _global._openingWindows.remove(_this);
-          });
-        }).onfocus(function() {
-          _global._openingWindows.focusOnAWindow(this._id);
-        });
-      }},*/
       {text: 'datamgr', action: function() {
         WDC.requireAPI(['app'], function(app){
           app.startAppByName(function(){}, "datamgr", null);
@@ -221,10 +164,6 @@ var DesktopView = View.extend({
           }}
         ]}
       ]}
-      // ,
-      // {text: lang['switch_motion'], subMenu: [
-      //   {header: 'switch motion'}
-      // ]}
     ]);
 
     var /* layout = desktop.getCOMById('layout').getCurLayout(), */
@@ -378,43 +317,6 @@ var DesktopView = View.extend({
     ctxMenu.attachToMenu('body', ctxMenu.getMenuByHeader('desktop')
         , function() {
           ctxMenu._rightObjId = undefined;
-          // if need, change to get from a file
-          /* var _DIR = _global.$home + '/.gnome2/nemo-scripts'; */
-          // console.log(_DIR);
-          // var _menu = ctxMenu.getMenuByHeader('script');
-          // if (typeof _menu !== 'undefined') {
-            // var _items = _menu.children('li');
-            // for (var i = 0; i < _items.length; i++) {
-            // if(!$(_items[i]).hasClass('nav-header'))
-              // $(_items[i]).remove();
-            // };
-          // }
-          // _global._fs.readdir(_DIR, function(err_, files_) {
-            // for(var i = 0; i < files_.length; i++) {
-              // var _names = files_[i].split('.');
-              // if(_names[_names.length - 1] == 'desktop') {
-                // _global.get('utilIns').entryUtil.getItemFromApp(_DIR + '/' + files_[i]
-                  // , function(err_, item_) {
-                    // ctxMenu.addItem(_menu, item_);
-                  // });
-              // };
-            // };
-          /* }); */
-
-          // get layout switch motion
-         /* var motions = _this._c['layout'].getMotions(),
-              sMenu = ctxMenu.getMenuByHeader('switch motion');
-          for(var key in motions) {
-            var item = {
-              text: key,
-              action: function(e) {
-                e.preventDefault();
-                _this._c['layout'].setCurSwitchMotion(this.text);
-              }
-            };
-            if(!ctxMenu.hasItem(sMenu, item))
-              ctxMenu.addItem(sMenu, item);
-          }*/
         });
   }
 });
