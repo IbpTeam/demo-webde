@@ -1380,6 +1380,9 @@ var LauncherView = View.extend({
       e.stopPropagation();
     }).on('mousedown', function(e) {
       e.stopPropagation();
+    }).on('click', function(e) {
+      e.stopPropagation();
+      _this.toggle();
     }).on('contextmenu', function(e) {
       e.stopPropagation();
       e.preventDefault();
@@ -1629,6 +1632,7 @@ var LauncherEntryView = View.extend({
         ctxMenu = _global.get('ctxMenu'),
         $menu_ = ctxMenu.getMenuByHeader('launcher');
     $view.on('click', function(e) {
+      e.stopPropagation();
       _this._controller.onClick();
       _this._parent.toggle();
     }).on('contextmenu', function(e) {
