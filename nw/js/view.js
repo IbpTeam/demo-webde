@@ -1134,6 +1134,13 @@ var DEntryView = WidgetView.extend({
         _this = this,
         desktop = _global.get('desktop');
 
+    _global._mix.isLocal(function(islocal){
+      if (islocal === false){
+        $selector.click(function() {
+          _this._controller.onDblclick();
+        });
+      }
+    });
     $selector.dblclick(function() {
       _this._controller.onDblclick();
     }).mouseenter(function() {
