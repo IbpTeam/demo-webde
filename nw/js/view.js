@@ -94,11 +94,6 @@ var DesktopView = View.extend({
         location.reload();
       }},
       {divider: true},
-      {text: 'datamgr', action: function() {
-        WDC.requireAPI(['app'], function(app){
-          app.startAppByName(function(){}, "datamgr", null);
-        });
-      }},
       {text: 'app-plugin', icon: 'icon-plus', subMenu: [
         {header: 'add-plugin'},
         {text: lang['clock'], icon: 'icon-time', action: function(e) {
