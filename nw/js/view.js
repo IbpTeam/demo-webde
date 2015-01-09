@@ -1302,6 +1302,7 @@ var LauncherView = View.extend({
     this.initCtxMenu();
     this._c = [];
     this._views = [];
+    this._cur_views = [];
   },
 
   registObservers: function() {
@@ -1380,11 +1381,15 @@ var LauncherView = View.extend({
   },
 
   initAction: function() {
-    var _this = this;
+    var _this = this,
+        c_input = this.$view.find('.c-s-input');
     _this.$view.on('mousemove', function(e) {
       e.stopPropagation();
     }).on('mousedown', function(e) {
       e.stopPropagation();
+    }).on('click', function(e) {
+      e.stopPropagation();
+      _this.toggle();
     }).on('contextmenu', function(e) {
       e.stopPropagation();
       e.preventDefault();
@@ -1402,6 +1407,19 @@ var LauncherView = View.extend({
         default:
           break;
       }
+    });
+    c_input.on('input', function() {
+      for(var i = 0; i < _this._cur_views.length; ++i)
+        _this._cur_views[i].view.toShow(_this._cur);
+      var inName = c_input.val();
+      if(inName == '') return ;
+      var regName = new RegExp('.*' + inName + '.*', 'i');
+      for(var i = 0; i < _this._cur_views.length; ++i) {
+        if(_this._cur_views[i].name.match(regName) == null)
+          _this._cur_views[i].view.toHide(_this._cur);
+      }
+    }).on('click', function(e) {
+      e.stopPropagation();
     });
   },
 
@@ -1517,8 +1535,9 @@ var LauncherView = View.extend({
 
                     _this._c[cg].content.show();
                     _this._c[cg].subject.addClass('open');
+                    _this._last = _this._cur;
                     _this._cur = cg;
-                    _this.$view.find('.c-s-input')[0].focus();
+                    _this.__initSearchBar();
                   }),
         'content': $('<div>', {
                     'class': 'c-items'
@@ -1540,6 +1559,7 @@ var LauncherView = View.extend({
       this._c[this._cur].content.hide();
       this._c[this._cur].subject.removeClass('open');
       this._shown = false;
+      this.$view.find('.c-s-input').val('');
     } else {
       var _this = this;
       html2canvas($('body'), {
@@ -1554,10 +1574,26 @@ var LauncherView = View.extend({
           _this._c['All'].content.show(); 
           _this._c['All'].subject.addClass('open'); 
           _this._cur = 'All';
-          _this.$view.find('.c-s-input')[0].focus();
+          _this.__initSearchBar();
         }
       });
     }
+  },
+
+  __initSearchBar: function() {
+    for(var i = 0; i < this._cur_views.length; ++i)
+      this._cur_views[i].view.toShow(this._last);
+    var s_input = this.$view.find('.c-s-input')[0],
+        kids = this._c[this._cur].content.children(),
+        entrys = [];
+    s_input.focus();
+    for(var i = 0; i < kids.length; ++i) {
+      entrys.push({
+        view: this._views[kids[i].id],
+        name: this._views[kids[i].id].getModel().getName()
+      });
+    }
+    this._cur_views = entrys;
   },
   
   getContents: function() {return this._c;}
@@ -1634,6 +1670,7 @@ var LauncherEntryView = View.extend({
         ctxMenu = _global.get('ctxMenu'),
         $menu_ = ctxMenu.getMenuByHeader('launcher');
     $view.on('click', function(e) {
+      e.stopPropagation();
       _this._controller.onClick();
       _this._parent.toggle();
     }).on('contextmenu', function(e) {
@@ -1664,6 +1701,16 @@ var LauncherEntryView = View.extend({
   hide: function() {
     this.$view.remove();
     if(this.$view2 != null) this.$view2.remove();
+  },
+
+  toShow: function(cg) {
+    if(cg == 'All') this.$view.show();
+    else this.$view2.show();
+  },
+
+  toHide: function(cg) {
+    if(cg == 'All') this.$view.hide();
+    else this.$view2.hide();
   }
 });
 
@@ -1726,7 +1773,8 @@ var DeviceListView = View.extend({
         var msg = toAccountInfo_['msg'];
         var fileMsg = msg.msg;
         if (curEditBox === undefined) {
-          _this._model.getToAccountInfo(toAccountInfo_,function(){
+          _this._model.getToAccountInfo(toAccountInfo_,function(toAccInfoTmp){
+            toAccountInfo_=toAccInfoTmp;
             _global._imV.getLocalData(function(localData) {
 	      if (fileMsg.type === undefined) {//聊天信息
 		var fromAcc;
@@ -2099,7 +2147,8 @@ var AccountEntryView = View.extend({
         }
         if (curEditBox === undefined) {
           localData['identity']=identity;
-          _this._controller.onDblclick(function(curEditBox){
+          _this._controller.onDblclick(function(curEditBoxTmp){
+            curEditBox=curEditBoxTmp;
           },localData);
         }else{
           _global._openingWindows.focusOnAWindow(curEditBox._imWindow._id);
@@ -3156,6 +3205,7 @@ var Selector = Class.extend({
             left_e: _off.left + _this.$view.width(),
             top_e: _off.top + _this.$view.height()
           }, _items[i].getView())) {
+          // TODO: may hasn't focus function!!
           _items[i].focus();
         }
       }
@@ -4531,6 +4581,7 @@ var UEditBox = Class.extend({
                 sendMsg['IP'] = curEditBox_._toAccountInfo.toIP;
                 sendMsg['UID'] = curEditBox_._toAccountInfo.toUID;
                 sendMsg['Account'] = curEditBox_._toAccountInfo.toAccount;
+                sendMsg['localUID'] = curEditBox_._localUID;
                 sendMsg['toAccList'] = curEditBox_._toAccountInfo.toAccList;
                 sendMsg['group'] = curEditBox_._group;
                 sendMsg['App'] = 'imChat';
