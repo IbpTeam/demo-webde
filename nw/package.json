@@ -6,10 +6,10 @@
   "nodejs": true,
   "window": {
     "title": "test",
-    "toolbar": true,
+    "toolbar": false,
     "show_in_taskbar": false,
     "as_desktop": true,
-    "frame": true
+    "frame": false
   },
   "dependencies": { 
     "demo-rio": "~0.0.1"
