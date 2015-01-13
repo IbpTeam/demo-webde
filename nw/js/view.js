@@ -3453,7 +3453,7 @@ var UEditBox = Class.extend({
     <div class="imChat_ueditorDiv" id="myEditor_' + _this._toIdentity + '" ></div>\
     <div class="imChat_btnDiv"> \
     <button type="button" class="imCloseBtn" id="close_button_' + _this._toIdentity + '">关闭</button> \
-    <button type="button" class="imSendBtn" id="send_button_' + _this._toIdentity + '">发送</button></div></div>\
+    <button type="button" class="imSendBtn" id="send_button_' + _this._toIdentity + '" title="按ctrl+enter键发送消息">发送</button></div></div>\
     <div class="imRightDiv">\
     <div class="chatList" id="memList_' + _this._toIdentity + '"  style="display:block">\
                     <div class="chatList_title">\
