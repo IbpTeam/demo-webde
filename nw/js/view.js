@@ -94,7 +94,7 @@ var DesktopView = View.extend({
         location.reload();
       }},
       {divider: true},
-      {text: 'app-plugin', icon: 'icon-plus', subMenu: [
+      {text: lang['add-plugin'], icon: 'icon-plus', subMenu: [
         {header: 'add-plugin'},
         {text: lang['clock'], icon: 'icon-time', action: function(e) {
           e.preventDefault();
