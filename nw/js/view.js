@@ -3453,7 +3453,7 @@ var UEditBox = Class.extend({
     <div class="imChat_ueditorDiv" id="myEditor_' + _this._toIdentity + '" ></div>\
     <div class="imChat_btnDiv"> \
     <button type="button" class="imCloseBtn" id="close_button_' + _this._toIdentity + '">关闭</button> \
-    <button type="button" class="imSendBtn" id="send_button_' + _this._toIdentity + '">发送</button></div></div>\
+    <button type="button" class="imSendBtn" id="send_button_' + _this._toIdentity + '" title="按ctrl+enter键发送消息">发送</button></div></div>\
     <div class="imRightDiv">\
     <div class="chatList" id="memList_' + _this._toIdentity + '"  style="display:block">\
                     <div class="chatList_title">\
@@ -3590,6 +3590,11 @@ var UEditBox = Class.extend({
     }).on('click', function(ev) {
       _global._openingWindows.focusOnAWindow(_this._imWindow._id);
     });
+    iframeBody.on('keyup',function(e){
+      if(e.ctrlKey&&e.keyCode===13){
+        _this.sendMsg(_this,toAccountInfo_);
+      }
+    });
     this._contentTip = MiniTip.create('send_button_' + _this._toIdentity, {
       event: 'custom',
       anchor: 'n'
@@ -3634,16 +3639,24 @@ var UEditBox = Class.extend({
       });
     });
     $('#send_button_' + _this._toIdentity).on('click', function() {
-      if (_this._onLineCount === 0) {
+      _this.sendMsg(_this,toAccountInfo_);
+    });
+    if (toAccountInfo_.msg !== undefined) {
+      _this.showRecDetail(toAccountInfo_, _this, false);
+    }
+  },
+
+  sendMsg:function(curEditBox_,toAccountInfo_){
+    if (curEditBox_._onLineCount === 0) {
         Messenger().post('当前没有设备在线，您将不能发送信息！');
         return;
       }
-      if (_this._um.hasContents()) {
-        var msg = _this._um.getContent();
+      if (curEditBox_._um.hasContents()) {
+        var msg = curEditBox_._um.getContent();
 
         function sendIMMsgCb() {
-          _this.divAppendContent($('#disp_text_' + _this._toIdentity),'<span class="accountFont"> 您&nbsp;&nbsp;&nbsp;</span><span class="timeFont"> ' + sendTime + '  :</span><br/>' + msg);
-          _this._um.setContent('');
+          curEditBox_.divAppendContent($('#disp_text_' + curEditBox_._toIdentity),'<span class="accountFont"> 您&nbsp;&nbsp;&nbsp;</span><span class="timeFont"> ' + sendTime + '  :</span><br/>' + msg);
+          curEditBox_._um.setContent('');
         }
         msgtime = new Date();
         sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
@@ -3652,10 +3665,10 @@ var UEditBox = Class.extend({
         sendMsg['UID'] = toAccountInfo_.toUID;
         sendMsg['toAccList'] = toAccountInfo_.toAccList;
         sendMsg['Account'] = toAccountInfo_.toAccount;
-        sendMsg['localUID'] = _this._localUID;
-        sendMsg['group'] = _this._group;
+        sendMsg['localUID'] = curEditBox_._localUID;
+        sendMsg['group'] = curEditBox_._group;
         sendMsg['Msg'] = JSON.stringify({
-          'group': _this._group,
+          'group': curEditBox_._group,
           'msg': msg
         });
         sendMsg['App'] = 'imChat';
@@ -3663,17 +3676,13 @@ var UEditBox = Class.extend({
           sendIMMsgCb();
         }, sendMsg, _global.get('ws').getSessionID(), true);
       } else {
-        _this._contentTip.show({
+        curEditBox_._contentTip.show({
           content: '发送内容不能为空！'
         });
         setTimeout(function() {
-          _this._contentTip.hide();
+          curEditBox_._contentTip.hide();
         }, 3000);
       }
-    });
-    if (toAccountInfo_.msg !== undefined) {
-      _this.showRecDetail(toAccountInfo_, _this, false);
-    }
   },
 
   showRec: function(toAccountInfo_, curEditBox_) {
