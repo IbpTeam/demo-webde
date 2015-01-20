@@ -8,9 +8,17 @@ var DesktopView = View.extend({
     this.callSuper('desktop-view', model_, parent_);
     this.controller = DesktopController.create(this);
     this.registObservers();
-    this.$view = $('body').append($('<img>', {
+    var $body = $('body').attr('onselectstart', 'return false');
+    this._height = $body.height();
+    this._width = $body.width();
+    this.$view = $('<div>', {
+      'class': 'dbg',
+      'width': this._width,
+      'height': this._height
+    }).append($('<img>', {
       'src': 'img/bgp.jpg'
     }));
+    $body.append(this.$view);
     this._c = [];
     this.initCtxMenu();
     this.initAction();
@@ -304,6 +312,19 @@ var DesktopView = View.extend({
     var _this = this;
     $(window).on('beforeunload', function() {
       _this._model.release();
+    }).resize(function() {
+      console.log('resize:', this.innerWidth, this.innerHeight);
+      // TODO: change the property of overflow
+      if(_this._width > this.innerWidth) {
+        $('body').css('overflow-x', 'auto');
+      } else {
+        $('body').css('overflow-x', 'hidden');
+      }
+      if(_this._height > this.innerHeight) {
+        $('body').css('overflow-y', 'auto');
+      } else {
+        $('body').css('overflow-y', 'hidden');
+      }
     });
 
     var ctxMenu = _global.get('ctxMenu'),
@@ -1460,7 +1481,7 @@ var LauncherView = View.extend({
       this.$view.find('.c-s-input').val('');
     } else {
       var _this = this;
-      html2canvas($('body'), {
+      html2canvas($('.dbg'), {
         onrendered: function(canvas) {
           _this.$view.append(canvas).children('canvas').attr({
             'class': 'blurcanvas',
@@ -1618,7 +1639,8 @@ var DeviceListView = View.extend({
     this.registObservers();
     this.$view = $('<div>', {
       'class': 'device-list',
-      'id': this._id
+      'id': this._id,
+      'onselectstart': 'return false'
     }).append($('<p>', {
       'class': 'title'
     }).text('Online Users').on('mouseenter', function(e) {
@@ -2961,15 +2983,7 @@ var Selector = Class.extend({
     this._mouseDown = false;
     this._s_X = 0;
     this._s_Y = 0;
-
-    var _view = container_.getView(),
-        _pos = _view.position(),
-        _width = _view.width(),
-        _height = _view.height();
-    this._c_SX = _pos.left;
-    this._c_SY = _pos.top;
-    this._c_EX = _pos.left + _width;
-    this._c_EY = _pos.top + _height;
+    this.__getArea(); 
 
     var _this = this;
     $(document).on('mousedown', this._selector, function(e) {
@@ -3107,7 +3121,24 @@ var Selector = Class.extend({
           _items[i].focus();
         }
       }
-    })
+    }).resize(function() {
+      _this.__getArea();
+    });
+  },
+
+  __getArea: function() {
+    var _view = this._c.getView(),
+        _pos = _view.position(),
+        _width = _view.width(),
+        _height = _view.height();
+    // _c_SX => _container_StartX
+    // _c_SY => _container_StartY
+    // _c_SX => _container_EndX
+    // _c_SY => _container_EndY
+    this._c_SX = _pos.left;
+    this._c_SY = _pos.top;
+    this._c_EX = _pos.left + _width;
+    this._c_EY = _pos.top + _height;
   },
 
   isOverlap: function(selector_, $entry_) {
