@@ -1,0 +1,12 @@
+{
+  "main": "index.html",
+  "name": "服务设置",
+  "window": {
+    "title": "服务设置",
+    "icon": "img/preferences.png",
+    "toolbar": false,
+    "frame": true,
+    "width": 500,
+    "height": 275
+  }
+}
