@@ -1078,18 +1078,24 @@ var RemoteObserver = Model.extend({
   //
   init: function() {
     this.callSuper('ws');
-    var addr = '',
+    cb_ = arguments[arguments.length - 1] || function() {};
+    if(typeof cb_ !== 'function') cb_ = function() {};
+    this._addr = '',
         cb_ = arguments[arguments.length - 1] || function() {};
     if(typeof cb_ !== 'function') cb_ = function() {};
     if(location.host == '') {
       this._local = true;
-      addr = ((arguments.length <= 1) ? ('ws://127.0.0.1:8888/ws') : arguments[0]);
+       this._addr = ((arguments.length <= 1) ? ('ws://127.0.0.1:8888/ws') : arguments[0]);
     } else {
       this._local = false;
-      addr = ((arguments.length <= 1) ? ('ws://' + location.host + '/ws') : arguments[0]);
+       this._addr = ((arguments.length <= 1) ? ('ws://' + location.host + '/ws') : arguments[0]);
     }
+    this.setConnection(cb_);
+  },
+
+  setConnection:function(cb_){
     try {
-      this._ws = new WebSocket(addr);
+      this._ws = new WebSocket( this._addr);
       this._ws.onopen = function() {
         console.log('WebSocket established successfully.');
         cb_(null);

@@ -1579,9 +1579,11 @@ var DeviceListModel = Model.extend({
     // _global._device.removeDeviceListener(this.__handler);
     var ws = _global.get('ws');
     _global._device.removeListener(this._hID, ws.getConnection());
+    _global._imV.removeListener(this._imID, ws.getConnection());
     if(!ws.isLocal()) {
       ws.off('device', this.__handler);
     }
+    ws.off('imChat', this.__handleIMMsg);
     for(var key in this._c) {
       this.remove(this._c[key]);
     }
@@ -1699,7 +1701,7 @@ var DeviceListModel = Model.extend({
       // _global._device.entryGroupCommit('demo-webde', '80', ['demo-webde:', 'hello!']);
     /* }); */
     // TODO: for IM, emit 'message' event when recive a message
-    _global._imV.registerIMApp(_this.__handleIMMsg,ws.getConnection());
+    _this._imID=_global._imV.registerIMApp(_this.__handleIMMsg,ws.getConnection());
     ws.on('imChat', this.__handleIMMsg);
     if(!ws.isLocal()) {
       ws.on('device', this.__handler);
