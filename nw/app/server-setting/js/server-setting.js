@@ -6,6 +6,18 @@ WDC.requireAPI(['data','IM'],function(data,im){
 		_im = im;	
 	});
 
+$(document).ready(function() {
+	console.log("Starting Server-setting App...");
+	init();
+});
+
+function init(){
+	$('#close').addClass('white')
+	$('#close').removeClass('disabled');
+	$('#start').addClass('disabled');
+	$('#start').removeClass('white');
+	console.log("init() has been executed...");
+}
 function startServer(){
 	//start http server
 	_data.startServer(function(done){
@@ -15,6 +27,12 @@ function startServer(){
 	_im.startIMService(function(done){
 		console.log(done?'start sever 7777 ok !':'start sever 7777 failed !');
 	},false);
+
+	
+	$('#close').addClass('white')
+	$('#close').removeClass('disabled');
+	$('#start').addClass('disabled');
+	$('#start').removeClass('white');
 	
 }
 
@@ -27,9 +45,10 @@ function closeServer(){
 	_im.closeIMService(function(done){
 		console.log(done?'close sever 7777 ok !':'close sever 7777 failed !');
 	},false);
-	
+	$('#close').removeClass('white')
+	$('#close').addClass('disabled');
+	$('#start').removeClass('disabled');
+	$('#start').addClass('white');
 }
 
-function test(){
-	console.log('test-----------');
-}
+
