@@ -2977,7 +2977,7 @@ var PropertyView = View.extend({
       var _this = this;
       //get some basic inform and access inform
       _global.get('utilIns').entryUtil.getProperty(
-          _global.$home + '/.resources/desktop/data/applications/' + _this._model.getPath()
+          _global.$home + '/.custard/resource/desktop/data/applications/' + _this._model.getPath()
           , function(err_, attr_) {
         if(typeof attr_ == 'undefined') {
           console.log('get Property err');
