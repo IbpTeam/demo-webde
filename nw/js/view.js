@@ -114,7 +114,7 @@ var DesktopView = View.extend({
           if (typeof $('#clock')[0] == 'undefined') {
             var layout = desktop.getCOMById('layout').getCurLayout();
             layout.add(DPluginModel.create('clock', layout, 'img/clock.png', 'ClockPlugin'));
-            ctxMenu.disableItem('add-plugin', 'clock');
+            ctxMenu.disableItem('add-plugin', _global._locale.langObj['clock']);
           }
         }}
       ]} ,
@@ -190,20 +190,12 @@ var DesktopView = View.extend({
         e.preventDefault();
         var layout = desktop.getCOMById('layout').getCurLayout(),
             _widget = layout.getWidgetById(ctxMenu._rightObjId);
-        ctxMenu.activeItem('add-plugin', 'clock', function(e_) {
+        ctxMenu.activeItem('add-plugin', _global._locale.langObj['clock'], function(e_) {
           e_.preventDefault();
           var curLayout = desktop.getCOMById('layout').getCurLayout();
           curLayout.add(DPluginModel.create('clock', curLayout, 'img/clock.png', 'ClockPlugin'));
         });
         layout.remove(_widget);
-      }},
-      {text: lang['show_clock'], action: function() {
-        $('#clock').modalBox({
-          iconImg: 'img/close.png',
-          iconClose: true,
-          keyClose: true,
-          bodyClose: true
-        });
       }}
     ]);
     ctxMenu.addCtxMenu([
@@ -1021,11 +1013,11 @@ var ClockPluginView = DPluginView.extend({
     // init context menu
     var ctxMenu = _global.get('ctxMenu'),
         _size = this._model.getSize();
-    ctxMenu.disableItem('add-plugin', 'clock');
+    ctxMenu.disableItem('add-plugin', _global._locale.langObj['clock']);
     if(_size.width == 180) {
-      ctxMenu.disableItem('plugin', 'zoom in');
+      ctxMenu.disableItem('plugin', _global._locale.langObj['zoom_in']);
     } else if(_size.width == 90) {
-      ctxMenu.disableItem('plugin', 'zoom out');
+      ctxMenu.disableItem('plugin', _global._locale.langObj['zoom_out']);
     }
     // init tooltip
     Tooltip.create(this.$view, 'cursor');
@@ -2447,10 +2439,10 @@ var DockView = View.extend({
     });
     var ctxMenu = _global.get('ctxMenu'),
         _this = this;
-    ctxMenu.activeItem('dock', 'remove reflect', function() {
+    ctxMenu.activeItem('dock', _global._locale.langObj['remove_reflect'], function() {
       _this.removeReflect();
     });
-    ctxMenu.disableItem('dock', 'add reflect');
+    ctxMenu.disableItem('dock', _global._locale.langObj['add_reflect']);
   },
 
   removeReflect: function() {
@@ -2460,10 +2452,10 @@ var DockView = View.extend({
     });
     var ctxMenu = _global.get('ctxMenu'),
         _this = this;
-    ctxMenu.activeItem('dock', 'add reflect', function() {
+    ctxMenu.activeItem('dock', _global._locale.langObj['add_reflect'], function() {
       _this.addReflect();
     });
-    ctxMenu.disableItem('dock', 'remove reflect');
+    ctxMenu.disableItem('dock', _global._locale.langObj['remove_reflect']);
   },
 
   dragLeave: function(ev) {
@@ -2622,7 +2614,7 @@ var DockEntryView = View.extend({
     ctxMenu.attachToMenu('#' + this.getID()
         , ctxMenu.getMenuByHeader('dock')
         , function(id_) {ctxMenu._rightObjId = id_});
-    ctxMenu.disableItem('dock', 'remove reflect');
+    ctxMenu.disableItem('dock', _global._locale.langObj['remove_reflect']);
   },
 
   show: function($parent) {

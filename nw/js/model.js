@@ -676,9 +676,9 @@ var DPluginModel = WidgetModel.extend({
             _this._row_num, 
             true);
       if(this._size.width == 180) { 
-        ctxMenu.disableItem('plugin', 'zoom in');
+        ctxMenu.disableItem('plugin', _global._locale.langObj['zoom_in']);
       } else if (this._size.width == 105) { 
-        ctxMenu.activeItem('plugin', 'zoom out', function(e) {
+        ctxMenu.activeItem('plugin', _global._locale.langObj['zoom_out'], function(e) {
           e.preventDefault();
           _this.zoomOut();
         });
@@ -712,9 +712,9 @@ var DPluginModel = WidgetModel.extend({
             true);
       var ctxMenu = _global.get('ctxMenu');
       if(this._size.width == 90) { 
-        ctxMenu.disableItem('plugin', 'zoom out');
+        ctxMenu.disableItem('plugin', _global._locale.langObj['zoom_out']);
       } else if (this._size.width == 165) {
-        ctxMenu.activeItem('plugin', 'zoom in', function(e) {
+        ctxMenu.activeItem('plugin', _global._locale.langObj['zoom_in'], function(e) {
           e.preventDefault();
           _this.zoomIn();
         });
