@@ -565,7 +565,10 @@ var GridView = WidgetView.extend({
     }
     // handle parent's resize event
     _this.__handlers['resize'] = function(err_, size_) {
-      _this._model.setSize(size_);
+      _this._model.setSize({
+        width: _this.$view.width(),
+        height: _this.$view.height()
+      });
       // modify selector's size
       if(_this._needSelector) _this._selector.__getArea();
     };
@@ -3788,7 +3791,16 @@ var UEditBox = Class.extend({
       if (curEditBox_._um.hasContents()) {
         var msg = curEditBox_._um.getContent();
 
-        function sendIMMsgCb() {
+        function sendIMMsgCb(rstMsg) {
+          if(rstMsg===undefined){
+            curEditBox_._contentTip.show({
+              content: '对方接收不到消息，请稍候重试！'
+            });
+            setTimeout(function() {
+              curEditBox_._contentTip.hide();
+            }, 3000);
+            return;
+          }
           curEditBox_.divAppendContent($('#disp_text_' + curEditBox_._toIdentity),'<span class="accountFont"> 您&nbsp;&nbsp;&nbsp;</span><span class="timeFont"> ' + sendTime + '  :</span><br/>' + msg);
           curEditBox_._um.setContent('');
         }
@@ -3806,8 +3818,8 @@ var UEditBox = Class.extend({
           'msg': msg
         });
         sendMsg['App'] = 'imChat';
-        _global._imV.sendIMMsg(function(mmm) {
-          sendIMMsgCb();
+        _global._imV.sendIMMsg(function(rstMsg) {
+          sendIMMsgCb(rstMsg);
         }, sendMsg, _global.get('ws').getSessionID(), true);
       } else {
         curEditBox_._contentTip.show({
@@ -4004,6 +4016,15 @@ var UEditBox = Class.extend({
       });
       setTimeout(function() {
         curEditBox_._contentTip.hide();
+      }, 3000);
+      return;
+    }
+    if (curEditBox_.invalidFile(filePath_)) {
+      curEditBox_._fileTip.show({
+        content: '不支持格式为desktop、config、list的文件上传!'
+      });
+      setTimeout(function() {
+        curEditBox_._fileTip.hide();
       }, 3000);
       return;
     }
@@ -4258,10 +4279,11 @@ var UEditBox = Class.extend({
             'msg': rst
           });
           if (msg_.state === 1) {
-            $('#fileRatio_' + msg_.key).text((msg_.ratio.toFixed(4) * 100) + '%');
+            var curRatio=(msg_.ratio.toFixed(4) * 100) ;
+            $('#fileRatio_' + msg_.key).text(curRatio + '%');
             var _gauge = Gauge.create();
             _gauge.modify($('#fileGauge_' + msg_.key)[0], {
-              values: [msg_.ratio.toFixed(4), 1]
+              values: [curRatio, 100]
             });
           } else {
             var ratioLabel;
@@ -4280,12 +4302,18 @@ var UEditBox = Class.extend({
                 //Messenger().post('err' + result);
               } else {
                 _global._imV.deleteTmpFile(function(err, deleteRst) {}, filePath);
+                var msgtime = new Date();
+                var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
+                curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<a id ="fileTransRst_'+msg_.key+'">找文件</a><br/>');
+                $('#fileTransRst_'+msg_.key).on('click',function(){
+                  var  buf= result['uri'].split('#');
+                  var category = buf[buf.length - 1];
+                  _global.get('desktop').getCOMById('launcher').get('datamgr-app').open('{category:"'+category+'",tag:".download"}');//
+                });
               }
             }, filePath);
             curEditBox_.fileItemTransRemove(curEditBox_, msg_.key, true);
-            var msgtime = new Date();
-            var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
-            curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<br/>');
+            
           }
           _global._imV.sendIMMsg(function(mmm) {}, sendMsg_, _global.get('ws').getSessionID(), true);
         }
@@ -4304,10 +4332,11 @@ var UEditBox = Class.extend({
           var fromAcc = curEditBox_._group === '' ? '对方' : sendMsg_.fromAccount + '(' + sendMsg_.fromUID + ')';
           _global._imV.transferProcessing(function() {
             if (msg_.state === 1) {
-              $('#fileRatio_' + msg_.key).text((msg_.ratio.toFixed(4) * 100) + '%');
+              var curRatio=(msg_.ratio.toFixed(4) * 100) ;
+              $('#fileRatio_' + msg_.key).text(curRatio+ '%');
               var _gauge = Gauge.create();
               _gauge.modify($('#fileGauge_' + msg_.key)[0], {
-                values: [msg_.ratio.toFixed(4), 1]
+                values: [curRatio, 100]
               });
             } else {
               var ratioLabel;
@@ -4338,10 +4367,11 @@ var UEditBox = Class.extend({
             };
           } else {
             if (msg_.state === 1) {
-              $('#fileRatio_' + msg_.key).text((msg_.ratio.toFixed(4) * 100) + '%');
+              var curRatio=(msg_.ratio.toFixed(4) * 100) ;
+              $('#fileRatio_' + msg_.key).text(curRatio+ '%');
               var _gauge = Gauge.create();
               _gauge.modify($('#fileGauge_' + msg_.key)[0], {
-                values: [msg_.ratio.toFixed(4), 1]
+                values: [curRatio, 100]
               });
             } else {
               var ratioLabel;
@@ -4360,12 +4390,17 @@ var UEditBox = Class.extend({
                   //Messenger().post('err' + result);
                 } else {
                   _global._imV.deleteTmpFile(function(err, deleteRst) {}, filePath);
+                  var msgtime = new Date();
+                  var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
+                  curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<a id ="fileTransRst_'+msg_.key+'">找文件</a><br/>');
+                  $('#fileTransRst_'+msg_.key).on('click',function(){
+                    var  buf= result['uri'].split('#');
+                    var category = buf[buf.length - 1];
+                    _global.get('desktop').getCOMById('launcher').get('datamgr-app').open('{category:"'+category+'",tag:".download"}');//result['tags']
+                  });
                 }
               }, filePath);
               setTimeout(curEditBox_.fileItemTransRemove(curEditBox_, msg_.key, true), 1000);
-              var msgtime = new Date();
-              var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
-              curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<br/>');
             }
             sendMsg_['Msg'] = JSON.stringify({
               'group': curEditBox_._group,
@@ -4747,6 +4782,21 @@ var UEditBox = Class.extend({
   divAppendContent:function(div,text){
     div.append(text);
     div[0].scrollTop=div[0].scrollHeight;
+  },
+
+  invalidFile:function(path){
+    var pathBuf = path.split('/');
+    var name = pathBuf[pathBuf.length - 1];
+    var nameBuf=name.split('.');
+    if(nameBuf.length>1){
+      var suffix=nameBuf[nameBuf.length-1];
+      if(suffix==='config'||suffix==='CONFIG'||suffix==='desktop'||suffix==='DESKTOP'||suffix==='list'||suffix==='LIST')
+        return true;
+      else
+        return false;
+    }else{
+      return false;
+    }
   }
 });
 
