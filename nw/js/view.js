@@ -8,7 +8,8 @@ var DesktopView = View.extend({
     this.callSuper('desktop-view', model_, parent_);
     this.controller = DesktopController.create(this);
     this.registObservers();
-    var $body = $('body').attr('onselectstart', 'return false');
+    var $body = $('body');
+    $body.attr('onselectstart', 'return false').empty();
     this._height = $body.height();
     this._width = $body.width();
     this.$view = $('<div>', {
@@ -97,6 +98,10 @@ var DesktopView = View.extend({
         }, "gedit");
       }},
       {divider: true},
+      {text: lang['resize'], action: function(e) {
+        e.preventDefault();
+        _this.__resize();
+      }},
       {text: lang['refresh'], icon: 'icon-spin3 animate-spin', action: function(e) {
         // TODO: only reload views
         location.reload();
@@ -308,13 +313,28 @@ var DesktopView = View.extend({
     ]);
   },
 
+  __resize: function() {
+    $('body').css('overflow', 'hidden');
+    var w = $('body').width(),
+        h = $('body').height(),
+        size = {
+          'width': w < 800 ? 800 : w,
+          'height': h < 600 ? 600 : h
+        };
+    this._width = size.width;
+    this._height = size.height;
+    this.$view.css(size);
+    this.getModel().setSize(size);
+  },
+
   initAction: function() {
     var _this = this;
     $(window).on('beforeunload', function() {
       _this._model.release();
     }).resize(function() {
       console.log('resize:', this.innerWidth, this.innerHeight);
-      // TODO: change the property of overflow
+      _this.__resize();
+      // change the property of overflow
       if(_this._width > this.innerWidth) {
         $('body').css('overflow-x', 'auto');
       } else {
@@ -468,27 +488,88 @@ var GridView = WidgetView.extend({
             break;
         }
       },
-      'layout_size': function(err_, size_) {
-        // redraw the layout container's size
-        _this.$view.css({
-          'width': size_.width,
-          'height': size_.height
-        });
-      },
+      /* 'layout_size': function(err_, size_) { */
+        // // TODO: maybe no need to redraw the layout container's size manually
+        // _this.$view.css({ 
+          // 'width': size_.width,
+          // 'height': size_.height
+        // }); 
+      /* }, */
       'grid_size': function(err_, size_) {
         // TODO: redraw the grid_size
+        if(err_) return console.log(err_);
+        console.log(size_);
       },
       'col_row': function(err_, col_row_diff_) {
+        if(err_) return console.log(err_);
         if(!_this._draw) {
-          _this.drawGrids();
+          _this.drawGrids(0, _this._model.getColNum(), 0, _this._model.getRowNum());
         } else {
           // TODO: add or remove colume or row
+          console.log(col_row_diff_);
+          var colNum = _this._model.getColNum(),
+              rowNum = _this._model.getRowNum();
+          if(col_row_diff_.col_diff < 0) {
+            // remove columes
+            for(var i = col_row_diff_.col_diff, cols = _this.$view.children('.gridcol');
+                i < 0; ++i) {
+              var idx = colNum - i - 1;
+              _this.destroyCol($(cols[idx]), idx);
+            }
+            if(col_row_diff_.row_diff < 0) { // des col & des row
+              // remove grids
+              for(var cols = _this.$view.children('.gridcol'), i = cols.length - 1; i >= 0; --i) {
+                for(var j = rowNum - col_row_diff_.row_diff - 1; j >= rowNum; --j) {
+                  _this.destroyGrid($(cols[i]), i, j);
+                }
+              }
+            } else { // des col & ins row
+              // add grids
+              for(var cols = _this.$view.children('.gridcol'), i = cols.length - 1; i >= 0; --i) {
+                for(var j = rowNum - col_row_diff_.row_diff; j < rowNum; ++j) {
+                  _this.drawGrid($(cols[i]), i, j);
+                }
+              }
+            }
+          } else {
+            // add columes
+            _this.drawGrids(colNum - col_row_diff_.col_diff, colNum, 0, rowNum);
+            // for(var i = 0, colNum = _this._model.getColNum(); i < col_row_diff_.col_diff; ++i) {
+              // _this.drawCol(colNum++);
+            // }
+            if(col_row_diff_.row_diff < 0) { // ins col & des row
+              // remove grids
+              for(var cols = _this.$view.children('.gridcol')
+                  , i = colNum - col_row_diff_.col_diff - 1;
+                  i >= 0; --i) {
+                for(var j = rowNum - col_row_diff_.row_diff - 1; j >= rowNum; --j) {
+                  _this.destroyGrid($(cols[i]), i, j);
+                }
+              }
+            } else { // ins col & ins row
+              // add grids
+              for(var cols = _this.$view.children('.gridcol')
+                  , i = colNum - col_row_diff_.col_diff - 1;
+                  i >= 0; --i) {
+                for(var j = rowNum - col_row_diff_.row_diff; j < rowNum; ++j) {
+                  _this.drawGrid($(cols[i]), i, j);
+                }
+              }
+            }
+          }
         }
       }
     };
     for(var key in _this.__handlers) {
       this._model.on(key, _this.__handlers[key]);
     }
+    // handle parent's resize event
+    _this.__handlers['resize'] = function(err_, size_) {
+      _this._model.setSize(size_);
+      // modify selector's size
+      if(_this._needSelector) _this._selector.__getArea();
+    };
+    _this._parent._model.on('resize', _this.__handlers['resize']);
   },
 
   addAnDEntry: function(entry_) {
@@ -499,6 +580,7 @@ var GridView = WidgetView.extend({
       pos_ = this._model.findAnIdleGrid();
       if(pos_ == null) {
         alert("No room");
+        // TODO: find from another page. If all full, add a new page
         this._model.remove(entry_);
         return ;
       }
@@ -557,21 +639,21 @@ var GridView = WidgetView.extend({
     delete this._c[entry_.getID()];
   },
 
-  drawGrids: function() {
+  drawGrids: function(startCol_, endCol_, startRow_, endRow_) {
     this._draw = true;
-    for(var i = 0; i < this._model._col_num; ++i) {
+    for(var i = startCol_; i < endCol_; ++i) {
       var col = this.drawCol(i);
 
       this._model._grid[i] = new Array();
-      for(var j = 0; j < this._model._row_num; ++j) {
+      for(var j = startRow_; j < endRow_; ++j) {
         this.drawGrid(col, i, j);
       }  
     }
-    var $grid = $('.grid');
-    this._model.setGridSize({
-      'gridWidth': $grid.width(),
-      'gridHeight': $grid.height()
-    })
+    // var $grid = $('.grid');
+    // this._model.setGridSize({
+      // 'gridWidth': $grid.width(),
+      // 'gridHeight': $grid.height()
+    // });
   },
 
   drawCol: function(i) {
@@ -602,8 +684,17 @@ var GridView = WidgetView.extend({
     this.$view.children('.gridcol').empty();
   },
 
-  destroyCol: function($col) {
+  destroyCol: function($col, i) {
+    this._model._grid[i] = null;
+    delete this._model._grid[i];
     $col.remove();
+  },
+
+  destroyGrid: function($col, i, j) {
+    var $grids = $col.children();
+    this._model._grid[i][j] = null;
+    delete this._model._grid[i][j];
+    $($grids[j]).remove();
   },
 
   show: function($parent, init_) {
@@ -652,6 +743,7 @@ var GridView = WidgetView.extend({
   },
 
   hide: function() {
+    this._parent._model.off('resize', this.__handlers['resize']);
     this.$view.remove();
   },
 
@@ -2295,7 +2387,7 @@ var DockView = View.extend({
       // ev.stopPropagation();
       for(var i = 0; i < divList.length; i++) {
         var jqImg = $(divList[i]).children('img'),
-            a = ev.clientX - (jqImg.position().left + jqImg.width() / 2),
+            a = ev.clientX - (jqImg.offset().left + jqImg.width() / 2),
             b = ev.clientY - (jqImg.position().top + jqImg.height() / 2 + dock.position().top),
             c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)),
             spex = 1 - c / _distance;
@@ -2885,7 +2977,7 @@ var PropertyView = View.extend({
       var _this = this;
       //get some basic inform and access inform
       _global.get('utilIns').entryUtil.getProperty(
-          _global.$home + '/.resources/desktop/data/applications/' + _this._model.getPath()
+          _global.$home + '/.custard/resource/desktop/data/applications/' + _this._model.getPath()
           , function(err_, attr_) {
         if(typeof attr_ == 'undefined') {
           console.log('get Property err');
@@ -3264,6 +3356,12 @@ var FlipperView = View.extend({
     for(var key in _this.__handlers) {
       this._model.on(key, _this.__handlers[key]);
     }
+    _this.__handlers['resize'] = function(err_, size_) {
+      _this._model.setSize(size_);
+      // modify selector's size
+      if(_this._needSelector) _this._selector.__getArea();
+    };
+    _this._parent._model.on('resize', _this.__handlers['resize']);
   },
 
   initAction: function($selector) {
@@ -3374,6 +3472,11 @@ var FlipperView = View.extend({
     }
   },
 
+  hide: function() {
+    this._parent._model.off('resize', this.__handlers['resize']);
+    this.$view.remove();
+  },
+
   addASwitcher: function($view, init_) {
     var _this = this,
         $switcher = $('<div>', {
@@ -3450,7 +3553,7 @@ var UEditBox = Class.extend({
       height: 600,
       width: 640,
       max: false,
-      resize:false
+      resize: false
     }, function() {
       this.getID = function() {
         return this._id;

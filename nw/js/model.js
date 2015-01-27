@@ -352,6 +352,10 @@ var DesktopModel = Model.extend({
     return null;
   },
 
+  setSize: function(size_) {
+    this.emit('resize', null, size_);
+  },
+
   initDesktopWatcher: function(watcher_) {
     var _desktop = this;
     // change to API our own
@@ -498,7 +502,7 @@ var DockModel = Model.extend({
       try {
         model = launcher.get(conf_[key].id);
       } catch(e) {
-        model = launcher.createAModel(conf_.insideApp[key], conf_[key].type);
+        model = launcher.createAModel(conf_[key], conf_[key].type);
       }
       this.add(model);
     }
@@ -613,12 +617,42 @@ var WidgetModel = Model.extend({
 
   setPosition: function(position_) {
     this._position = position_;
-    this.emit('position', null, this._position);
+    if(typeof this._position !== 'undefined')
+      this.emit('position', null, this._position);
   },
 
   getID: function() {return this._id;},
 
   setID: function(id_) {this._id = id_;},
+
+  __saveLayout: function(layIdx, add, disk, callback_) {
+    var cb_ = callback_ || function() {},
+        desktop = _global.get('desktop'),
+        layout = desktop.getCOMById('layout'),
+        widgets = desktop._USER_CONFIG.layout.widget[layIdx];
+    this.__doSaveLayout(desktop, add, widgets, disk, cb_);
+  },
+
+  __saveDock: function(add, disk, callback_) {
+    var cb_ = callback_ || function() {},
+        desktop = _global.get('desktop'),
+        dock = desktop.getCOMById('dock'),
+        dwidgets = desktop._USER_CONFIG.dock;
+    if(add) {
+      dwidgets[this._id] = this.toJSON();
+    } else {
+      dwidgets[this._id] = null;
+      delete dwidgets[this._id];
+    }
+    if(disk) {
+      _global._dataOP.writeDesktopConfig(function(err_) {
+        if(err_) return cb_(err_);
+        cb_(null);
+      }, 'Widget.conf', desktop._USER_CONFIG);
+    } else {
+      cb_(null);
+    }
+  }
 });
 
 var DPluginModel = WidgetModel.extend({
@@ -714,6 +748,32 @@ var DPluginModel = WidgetModel.extend({
           _this.zoomIn();
         });
       };
+    }
+  },
+
+  toJSON: function() {
+    return {
+      'id': this._id,
+      'path': this._path,
+      'type': this._type,
+      'position': this._position,
+    };
+  },
+
+  __doSaveLayout: function(desktop_, add_, widgets_, disk_, cb_) {
+    if(add_) {
+      widgets_['plugin'][this._id] = this.toJSON();
+    } else {
+      widgets_['plugin'][this._id] = null;
+      delete widgets_['plugin'][this._id];
+    }
+    if(disk_) {
+      _global._dataOP.writeDesktopConfig(function(err_) {
+        if(err_) return cb_(err_);
+        cb_(null);
+      }, 'Widget.conf', desktop_._USER_CONFIG);
+    } else {
+      cb_(null);
     }
   }
 });
@@ -811,8 +871,27 @@ var EntryModel = WidgetModel.extend({
       'path': this._path,
       'type': this._type,
       'position': this._position,
-      'idx': this._idx
+      'idx': this._idx,
+      'name': this._name,
+      'iconPath': this._imgPath
     };
+  },
+
+  __doSaveLayout: function(desktop_, add_, widgets_, disk_, cb_) {
+    if(add_) {
+      widgets_['dentry'][this._id] = this.toJSON();
+    } else {
+      widgets_['dentry'][this._id] = null;
+      delete widgets_['dentry'][this._id];
+    }
+    if(disk_) {
+      _global._dataOP.writeDesktopConfig(function(err_) {
+        if(err_) return cb_(err_);
+        cb_(null);
+      }, 'Widget.conf', desktop_._USER_CONFIG);
+    } else {
+      cb_(null);
+    }
   }
 });
 
@@ -869,20 +948,46 @@ var InsideAppEntryModel = EntryModel.extend({
     this.emit('idx', null, this._idx);
   },
 
-  linkToDesktop: function() {
-    _global.get('desktop').getCOMById('layout').getCurLayout().add(this);
+  linkToDesktop: function(disk_) {
+    var layout = _global.get('desktop').getCOMById('layout'),
+        cur = layout.getCurLayout(),
+        _this = this;
+    cur.add(_this);
+    _this.__saveLayout(layout.getCur(), true, disk_, function(err_) {
+      if(err_) {
+        cur.remove(_this);
+        console.log(err_);
+      }
+    });
   },
 
-  unlinkFromDesktop: function() {
-    _global.get('desktop').getCOMById('layout').getCurLayout().remove(this);
+  unlinkFromDesktop: function(disk_) {
+    var layout = _global.get('desktop').getCOMById('layout'),
+        _this = this;
+    _this.__saveLayout(layout.getCur(), false, disk_, function(err_) {
+      if(err_) return console.log(err_);
+      layout.getCurLayout().remove(_this);
+    });
   },
 
-  linkToDock:function() {
-    _global.get('desktop').getCOMById('dock').add(this);
+  linkToDock:function(disk_) {
+    var _this = this,
+        dock = _global.get('desktop').getCOMById('dock');
+    dock.add(_this);
+    _this.__saveDock(true, disk_, function(err_) {
+      if(err_) {
+        dock.remove(_this);
+        console.log(err_);
+      }
+    });
   },
 
-  unlinkFromDock: function() {
-    _global.get('desktop').getCOMById('dock').remove(this);
+  unlinkFromDock: function(disk_) {
+    var _this = this;
+    this.__saveDock(false, disk_, function(err_) {
+      if(err_) return console.log(err_);
+      _global.get('desktop').getCOMById('dock').remove(_this);
+    });
   },
 
   rename: function(name_) {
@@ -891,8 +996,25 @@ var InsideAppEntryModel = EntryModel.extend({
       //    send new name to Data Layer and rename this entry
       this.setName(name_);
     }
+  },
+
+  __doSaveLayout: function(desktop_, add_, widgets_, disk_, cb_) {
+    if(add_) {
+      widgets_['insideApp'][this._id] = this.toJSON();
+    } else {
+      widgets_['insideApp'][this._id] = null;
+      delete widgets_['insideApp'][this._id];
+    }
+    if(disk_) {
+      _global._dataOP.writeDesktopConfig(function(err_) {
+        if(err_) return cb_(err_);
+        cb_(null);
+      }, 'Widget.conf', desktop_._USER_CONFIG);
+    } else {
+      cb_(null);
+    }
   }
-})
+});
 
 // The model of App Entry
 // callback_: function(err)
@@ -1089,20 +1211,46 @@ var AppEntryModel = EntryModel.extend({
     }
   },
 
-  linkToDesktop: function() {
-    _global.get('desktop').getCOMById('layout').getCurLayout().add(this);
+  linkToDesktop: function(disk_) {
+    var layout = _global.get('desktop').getCOMById('layout'),
+        cur = layout.getCurLayout(),
+        _this = this;
+    cur.add(_this);
+    _this.__saveLayout(layout.getCur(), true, disk_, function(err_) {
+      if(err_) {
+        cur.remove(_this);
+        console.log(err_);
+      }
+    });
   },
 
-  unlinkFromDesktop: function() {
-    _global.get('desktop').getCOMById('layout').getCurLayout().remove(this);
+  unlinkFromDesktop: function(disk_) {
+    var layout = _global.get('desktop').getCOMById('layout'),
+        _this = this;
+    _this.__saveLayout(layout.getCur(), false, disk_, function(err_) {
+      if(err_) return console.log(err_);
+      layout.getCurLayout().remove(_this);
+    });
   },
 
-  linkToDock:function() {
-    _global.get('desktop').getCOMById('dock').add(this);
+  linkToDock:function(disk_) {
+    var _this = this,
+        dock = _global.get('desktop').getCOMById('dock');
+    dock.add(_this);
+    _this.__saveDock(true, disk_, function(err_) {
+      if(err_) {
+        dock.remove(_this);
+        console.log(err_);
+      }
+    });
   },
 
-  unlinkFromDock: function() {
-    _global.get('desktop').getCOMById('dock').remove(this);
+  unlinkFromDock: function(disk_) {
+    var _this = this;
+    this.__saveDock(false, disk_, function(err_) {
+      if(err_) return console.log(err_);
+      _global.get('desktop').getCOMById('dock').remove(_this);
+    });
   }/* , */
   // remove the API relied on the watcher
   // TODO: remove these code when not needed
@@ -1312,7 +1460,7 @@ var DirEntryModel = EntryModel.extend({
       if(entryIds_[i] == this._id || typeof item === 'undefined' ) continue;
       var type = item.getType();
       if(type == 'app' || type == 'inside-app') {
-        item.unlinkFromDesktop();
+        item.unlinkFromDesktop(true);
       } else {
         item.getParent().remove(item);
       }
@@ -1452,9 +1600,9 @@ var LauncherModel = Model.extend({
           var model = _this.createAModel(info_, 'inside-app');
           if(data_.option.desktop) {
             model.setPosition(data_.option.pos);
-            model.linkToDesktop();
+            model.linkToDesktop(true);
           }
-          if(data_.option.dock) model.linkToDock();
+          if(data_.option.dock) model.linkToDock(true);
         }, data_.appID);
       } else if(data_.event == 'unregister') {
         var model = _this._c[data_.appID],
@@ -1511,15 +1659,18 @@ var LauncherModel = Model.extend({
   },
 
   createAModel: function(attr_, type_) {
-    var model = null;
+    var model = null,
+        ws = _global.get('ws');
     if(type_ == 'app') {
-      model = AppEntryModel.create(attr_.id, this, attr_.path, attr_.idx, attr_.position);
+      model = AppEntryModel.create(attr_.id, this, attr_.path, attr_.idx,
+          (ws.isLocal() ? attr_.position : undefined));
       this.set(model);
     } else if(type_ == 'inside-app') {
       switch(attr_.id) {
         case 'launcher-app':
           model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
-              this, this.show, [], attr_.name, attr_.idx, attr_.position);
+              this, this.show, [], attr_.name, attr_.idx, 
+              (ws.isLocal() ? attr_.position : undefined));
           break;
         case 'login-app':
           var login = _global._login;
@@ -1527,13 +1678,15 @@ var LauncherModel = Model.extend({
           var _this = this;
           login.off('login-state', _this.__h).on('login-state', _this.__h);
           model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
-              login, login.login, [], attr_.name, attr_.idx, attr_.position);
+              login, login.login, [], attr_.name, attr_.idx, 
+              (ws.isLocal() ? attr_.position : undefined));
           break; 
         default:
           // new a InsideAppEntryModel for data manager or other inside app which launched by
           //   using window with a iframe.
           model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
-              this, this.startUp, [attr_.id], attr_.name, attr_.idx, attr_.position);
+              this, this.startUp, [attr_.id], attr_.name, attr_.idx, 
+              (ws.isLocal() ? attr_.position : undefined));
           break;
       }
       this.set(model);
@@ -2055,7 +2208,8 @@ var WidgetManager = Model.extend({
     // should load all user config data on desktop._USER_CONFIG
     // and get data by key-value style.
     var model,
-        launcher = _global.get('desktop').getCOMById('launcher');
+        launcher = _global.get('desktop').getCOMById('launcher'),
+        ws = _global.get('ws');
     for(var key in conf_.insideApp) {
       var model;
       try {
@@ -2073,7 +2227,7 @@ var WidgetManager = Model.extend({
             this._parent,
             conf_.plugin[key].path,
             conf_.plugin[key].type,
-            conf_.plugin[key].position
+            ws.isLocal() ? conf_.plugin[key].position : undefined
           ));
     }
 
@@ -2100,18 +2254,18 @@ var WidgetManager = Model.extend({
           break;
         case 'dir':
           model = DirEntryModel.create(conf_.dentry[key].id, this, conf_.dentry[key].path
-              , conf_.dentry[key].position, function() {
+              , (ws.isLocal() ? conf_.plugin[key].position : undefined), function() {
                 this.setList(conf_.dentry[key].list);
               });
           break;
         default:
-          // TODO: handle File entry model
+          // handle File entry model
+          model = FileEntryModel.create(conf_.dentry[key].id, this, conf_.dentry[key].path
+              , (ws.isLocal() ? conf_.plugin[key].position : undefined));
           break;
       }
       this.add(model);
     }
-    
-    // TODO: watch on app's unregister event
   },
 
   save: function(conf_) {
@@ -2207,15 +2361,27 @@ var GridModel = LayoutModel.extend({
     var cn = Math.floor(this._width / this._col);
     var rn = Math.floor(this._height / this._row);
     if(cn != this._col_num || rn != this._row_num) {
+      // 'delete' entrys from manager
+      var widgets = this.getAllWidgets();
+      for(var key in widgets) this.emit('remove', null, widgets[key]);
       var _col_diff = cn - this._col_num,
           _row_diff = rn - this._row_num;
       this._col_num = cn;
       this._row_num = rn;
-      this.emit('col_row', {
+      this.emit('col_row', null, {
         'col_diff': _col_diff,
         'row_diff': _row_diff
       });
+      // modify entrys' pos to undefined, and 'add' entrys to manager
+      for(var key in widgets) {
+        widgets[key].setPosition(undefined);
+        this.emit('add', null, widgets[key]);
+      }
     }
+  },
+
+  getContentWidth: function() {
+    return this._col_num * this._col;
   },
 
   findAnIdleGrid: function() {
@@ -2507,6 +2673,10 @@ var FlipperModel = LayoutModel.extend({
 
   setMain: function(main_) {
     this._main = main_;
+  },
+
+  setSize: function(size_) {
+    this.emit('resize', null, size_);
   }
 });
 

@@ -410,7 +410,7 @@ var Global = Class.extend({
               var tmp = stdout.substr(0, stdout.length - 1).split(' ');
               _this.$home = tmp[0];
               _this.$xdg_current_desktop = tmp[1]; 
-              _this.$xdg_data_home = _this.$home + '/.resources/desktop/data';
+              _this.$xdg_data_home = _this.$home + '/.custard/resource/desktop/data';
               // _this._exec('echo $XDG_DATA_DIRS', function(err, stdout, stderr) {
               _this._dataOP.shellExec(function(err, stdout, stderr) {
                 if(err) {
