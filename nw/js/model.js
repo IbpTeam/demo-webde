@@ -2252,14 +2252,14 @@ var WidgetManager = Model.extend({
           break;
         case 'dir':
           model = DirEntryModel.create(conf_.dentry[key].id, this, conf_.dentry[key].path
-              , (ws.isLocal() ? conf_.plugin[key].position : undefined), function() {
+              , (ws.isLocal() ? conf_.dentry[key].position : undefined), function() {
                 this.setList(conf_.dentry[key].list);
               });
           break;
         default:
           // handle File entry model
           model = FileEntryModel.create(conf_.dentry[key].id, this, conf_.dentry[key].path
-              , (ws.isLocal() ? conf_.plugin[key].position : undefined));
+              , (ws.isLocal() ? conf_.dentry[key].position : undefined));
           break;
       }
       this.add(model);
