@@ -1770,6 +1770,10 @@ var DeviceListView = View.extend({
     }).on('mouseleave', function(e) {
       e.stopPropagation();
     }));
+    this.$view.on('contextmenu', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    });
     this._c = [];
     this.initAction();
     this._shown = false;
