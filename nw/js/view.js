@@ -30,7 +30,7 @@ var DesktopView = View.extend({
     _this.__handlers = {
       'add': function(err_, component_) {
         var id = component_.getID();
-        console.log(")))))))))))))))))))))))))))))))))in function registObservers of DesktopView: id, " + id + "<" + component_ + ">");
+        console.log("in function registObservers of DesktopView: id, " + id + "<" + component_ + ">");
         switch(id) {
           case 'launcher':
             // create a launcher view(split create and init into two functions, and
@@ -249,7 +249,23 @@ var DesktopView = View.extend({
       }},
       {text: lang['move2trash'], icon: 'icon-trash', action:function(e){
         e.preventDefault();
-        utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
+        var _id = ctxMenu._rightObjId;
+        var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+        var _widgetModel = _layout.getWidgetById(_id);
+        _global._dataOP.removeFileFromDesk(function(){
+          var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+          var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+          var _gridController = _gridView._controller;
+          _gridController.onRemoveFile(_widgetModel);
+          _msg = Messenger().newMessage();
+          _msg.update({
+            message: lang['move2trash'] + lang['space'] + lang['success'],
+            type: 'success',
+            showCloseButton: true,
+            actions: false
+          });
+        }, _widgetModel._path);
+       // utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
       }},
       {text: lang['delete'], icon: 'icon-cancel-circled2', action:function(e){
         e.preventDefault();
@@ -262,20 +278,13 @@ var DesktopView = View.extend({
             sure:{
               label: lang['sure'],
               action:function(){
-                // var _path = desktop._widgets[ctxMenu._rightObjId]._path;
                 var _id = ctxMenu._rightObjId;
                 var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
                 var _widgetModel = _layout.getWidgetById(_id);
-                //console.log("_id: " + _id);
-                //console.log("_widgetModel: " + JSON.stringify(_widgetModel));
                 _global._dataOP.removeFileFromDesk(function(){
-                  //layout.deleteADEntry(_widgetModel);
                   var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
                   var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
-                  //var _widgetView = _gridView._c[_id];
                   var _gridController = _gridView._controller;
-                  console.log("_gridView: " + _gridView);
-                  console.log("_gridController: " + _gridController);
                   _gridController.onRemoveFile(_widgetModel);
                   _msg.update({
                     message: lang['delete'] + lang['space'] + lang['success'],
@@ -290,13 +299,26 @@ var DesktopView = View.extend({
             trash:{
               label: lang['move2trash'],
               action:function(){
+                var _id = ctxMenu._rightObjId;
+                var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+                var _widgetModel = _layout.getWidgetById(_id);
+                //console.log("_id: " + _id);
+                //console.log("_widgetModel: " + JSON.stringify(_widgetModel));
+                _global._dataOP.removeFileFromDesk(function(){
+                  var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+                  var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+                  var _gridController = _gridView._controller;
+                  //console.log("_gridView: " + _gridView);
+                  //console.log("_gridController: " + _gridController);
+                  _gridController.onRemoveFile(_widgetModel);
+                  _msg.update({
+                    message: lang['move2trash'] + lang['space'] + lang['success'],
+                    type: 'success',
+                    showCloseButton: true,
+                    actions: false
+                  });
+                }, _widgetModel._path);
                // utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
-                _msg.update({
-                  message: lang['move2trash'] + lang['space'] + lang['success'],
-                  type: 'success',
-                  showCloseButton: true,
-                  actions: false
-                });
               }
             },
             cancel:{
