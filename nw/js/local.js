@@ -43,7 +43,7 @@ var FlipperController = Controller.extend({
         break;
     }
   }
-})
+});
 
 // The Controller of Grid
 //
@@ -53,11 +53,20 @@ var GridController = WidgetController.extend({
   },
 
   onAddFile: function(path_, inode_) {
+    var that = this;
     var desktop = _global.get('desktop'),
-        entry = FileEntryModel.create('id-' + inode_, this._model, path_, desktop._position);
-    entry.__saveLayout(this._model._parent.getCur(), true, function(err_) {
+        entry = FileEntryModel.create('id-' + inode_, that._model, path_, desktop._position);
+    entry.__saveLayout(that._model._parent.getCur(), true, true, function(err_) {
       if(err_) return console.log(err_);
-      _global.get('theCP').perform(NoUndoCommand.create(this._model, 'exec', this._model.add, entry));
+      _global.get('theCP').perform(NoUndoCommand.create(that._model, 'exec', that._model.add, entry));
+    });
+  },
+
+  onRemoveFile: function(entry) {
+    var that = this;
+    entry.__saveLayout(that._model._parent.getCur(), false, true, function(err_) {
+      if(err_) return console.log(err_);
+      _global.get('theCP').perform(NoUndoCommand.create(that._model, 'exec', that._model.remove, entry));
     });
   },
 
