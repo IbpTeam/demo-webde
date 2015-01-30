@@ -240,7 +240,22 @@ var DesktopView = View.extend({
       }},
       {text: lang['move2trash'], icon: 'icon-trash', action:function(e){
         e.preventDefault();
-        utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
+        var _id = ctxMenu._rightObjId;
+        var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+        var _widgetModel = _layout.getWidgetById(_id);
+        _global._dataOP.removeFileFromDesk(function(){
+          var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+          var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+          var _gridController = _gridView._controller;
+          _gridController.onRemoveFile(_widgetModel);
+          _msg = Messenger().newMessage();
+          _msg.update({
+            message: lang['move2trash'] + lang['space'] + lang['success'],
+            type: 'success',
+            showCloseButton: true,
+            actions: false
+          });
+        }, _widgetModel._path);
       }},
       {text: lang['delete'], icon: 'icon-cancel-circled2', action:function(e){
         e.preventDefault();
@@ -253,26 +268,41 @@ var DesktopView = View.extend({
             sure:{
               label: lang['sure'],
               action:function(){
-                var _path = desktop._widgets[ctxMenu._rightObjId]._path;
-                utilIns.entryUtil.removeFile(_path);
-                _msg.update({
-                  message: lang['delete'] + lang['space'] + lang['success'],
-                  type: 'success',
-                  showCloseButton: true,
-                  actions: false
-                });
+                var _id = ctxMenu._rightObjId;
+                var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+                var _widgetModel = _layout.getWidgetById(_id);
+                _global._dataOP.removeFileFromDesk(function(){
+                  var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+                  var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+                  var _gridController = _gridView._controller;
+                  _gridController.onRemoveFile(_widgetModel);
+                  _msg.update({
+                    message: lang['delete'] + lang['space'] + lang['success'],
+                    type: 'success',
+                    showCloseButton: true,
+                    actions: false
+                  });
+                }, _widgetModel._path);
               }
             },
             trash:{
               label: lang['move2trash'],
               action:function(){
-                utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
-                _msg.update({
-                  message: lang['move2trash'] + lang['space'] + lang['success'],
-                  type: 'success',
-                  showCloseButton: true,
-                  actions: false
-                });
+                var _id = ctxMenu._rightObjId;
+                var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+                var _widgetModel = _layout.getWidgetById(_id);
+                _global._dataOP.removeFileFromDesk(function(){
+                  var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+                  var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+                  var _gridController = _gridView._controller;
+                  _gridController.onRemoveFile(_widgetModel);
+                  _msg.update({
+                    message: lang['move2trash'] + lang['space'] + lang['success'],
+                    type: 'success',
+                    showCloseButton: true,
+                    actions: false
+                  });
+                }, _widgetModel._path);
               }
             },
             cancel:{
@@ -1735,6 +1765,10 @@ var DeviceListView = View.extend({
     }).on('mouseleave', function(e) {
       e.stopPropagation();
     }));
+    this.$view.on('contextmenu', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    });
     this._c = [];
     this.initAction();
     this._shown = false;
