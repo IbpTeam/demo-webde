@@ -30,7 +30,6 @@ var DesktopView = View.extend({
     _this.__handlers = {
       'add': function(err_, component_) {
         var id = component_.getID();
-        console.log("in function registObservers of DesktopView: id, " + id + "<" + component_ + ">");
         switch(id) {
           case 'launcher':
             // create a launcher view(split create and init into two functions, and
@@ -265,7 +264,6 @@ var DesktopView = View.extend({
             actions: false
           });
         }, _widgetModel._path);
-       // utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
       }},
       {text: lang['delete'], icon: 'icon-cancel-circled2', action:function(e){
         e.preventDefault();
@@ -293,7 +291,6 @@ var DesktopView = View.extend({
                     actions: false
                   });
                 }, _widgetModel._path);
-                //utilIns.entryUtil.removeFile(_path);
               }
             },
             trash:{
@@ -302,14 +299,10 @@ var DesktopView = View.extend({
                 var _id = ctxMenu._rightObjId;
                 var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
                 var _widgetModel = _layout.getWidgetById(_id);
-                //console.log("_id: " + _id);
-                //console.log("_widgetModel: " + JSON.stringify(_widgetModel));
                 _global._dataOP.removeFileFromDesk(function(){
                   var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
                   var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
                   var _gridController = _gridView._controller;
-                  //console.log("_gridView: " + _gridView);
-                  //console.log("_gridController: " + _gridController);
                   _gridController.onRemoveFile(_widgetModel);
                   _msg.update({
                     message: lang['move2trash'] + lang['space'] + lang['success'],
@@ -318,7 +311,6 @@ var DesktopView = View.extend({
                     actions: false
                   });
                 }, _widgetModel._path);
-               // utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
               }
             },
             cancel:{
