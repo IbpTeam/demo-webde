@@ -488,7 +488,6 @@ var GridView = WidgetView.extend({
     var _this = this;
     _this.__handlers = {
       'add': function(err_, widget_) {
-        console.log("in function registObservers of GridView: id, " + widget_.getID() + "<" + widget_ + ">");
         if(err_) {
           console.log(err_);
           return ;
