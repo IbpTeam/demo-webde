@@ -240,7 +240,22 @@ var DesktopView = View.extend({
       }},
       {text: lang['move2trash'], icon: 'icon-trash', action:function(e){
         e.preventDefault();
-        utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
+        var _id = ctxMenu._rightObjId;
+        var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+        var _widgetModel = _layout.getWidgetById(_id);
+        _global._dataOP.removeFileFromDesk(function(){
+          var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+          var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+          var _gridController = _gridView._controller;
+          _gridController.onRemoveFile(_widgetModel);
+          _msg = Messenger().newMessage();
+          _msg.update({
+            message: lang['move2trash'] + lang['space'] + lang['success'],
+            type: 'success',
+            showCloseButton: true,
+            actions: false
+          });
+        }, _widgetModel._path);
       }},
       {text: lang['delete'], icon: 'icon-cancel-circled2', action:function(e){
         e.preventDefault();
@@ -253,26 +268,41 @@ var DesktopView = View.extend({
             sure:{
               label: lang['sure'],
               action:function(){
-                var _path = desktop._widgets[ctxMenu._rightObjId]._path;
-                utilIns.entryUtil.removeFile(_path);
-                _msg.update({
-                  message: lang['delete'] + lang['space'] + lang['success'],
-                  type: 'success',
-                  showCloseButton: true,
-                  actions: false
-                });
+                var _id = ctxMenu._rightObjId;
+                var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+                var _widgetModel = _layout.getWidgetById(_id);
+                _global._dataOP.removeFileFromDesk(function(){
+                  var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+                  var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+                  var _gridController = _gridView._controller;
+                  _gridController.onRemoveFile(_widgetModel);
+                  _msg.update({
+                    message: lang['delete'] + lang['space'] + lang['success'],
+                    type: 'success',
+                    showCloseButton: true,
+                    actions: false
+                  });
+                }, _widgetModel._path);
               }
             },
             trash:{
               label: lang['move2trash'],
               action:function(){
-                utilIns.trashUtil.moveToTrash(ctxMenu._rightObjId);
-                _msg.update({
-                  message: lang['move2trash'] + lang['space'] + lang['success'],
-                  type: 'success',
-                  showCloseButton: true,
-                  actions: false
-                });
+                var _id = ctxMenu._rightObjId;
+                var _layout = _global.get('desktop').getCOMById('layout').getCurLayout();
+                var _widgetModel = _layout.getWidgetById(_id);
+                _global._dataOP.removeFileFromDesk(function(){
+                  var _curGrid = _global.get('desktop').getCOMById('layout').getCur();
+                  var _gridView = _global.get('desktop')._view._c['layout']._c[_curGrid];
+                  var _gridController = _gridView._controller;
+                  _gridController.onRemoveFile(_widgetModel);
+                  _msg.update({
+                    message: lang['move2trash'] + lang['space'] + lang['success'],
+                    type: 'success',
+                    showCloseButton: true,
+                    actions: false
+                  });
+                }, _widgetModel._path);
               }
             },
             cancel:{
@@ -1735,6 +1765,10 @@ var DeviceListView = View.extend({
     }).on('mouseleave', function(e) {
       e.stopPropagation();
     }));
+    this.$view.on('contextmenu', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    });
     this._c = [];
     this.initAction();
     this._shown = false;
@@ -4290,17 +4324,17 @@ var UEditBox = Class.extend({
               }
             }
             _global._dataOP.loadFile(function(err, result) {
+              var msgtime = new Date();
+              var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
               if (err) {
-                //Messenger().post('err' + result);
+                curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '（导入文件失败）<br/>');
               } else {
                 _global._imV.deleteTmpFile(function(err, deleteRst) {}, filePath);
-                var msgtime = new Date();
-                var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
                 curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<a id ="fileTransRst_'+msg_.key+'">找文件</a><br/>');
                 $('#fileTransRst_'+msg_.key).on('click',function(){
                   var  buf= result['uri'].split('#');
                   var category = buf[buf.length - 1];
-                  _global.get('desktop').getCOMById('launcher').get('datamgr-app').open('{category:"'+category+'",tag:".download"}');//
+                  _global.get('desktop').getCOMById('launcher').get('datamgr-app').open('{category:"'+category+'",tag:".download"}');
                 });
               }
             }, filePath);
@@ -4378,12 +4412,12 @@ var UEditBox = Class.extend({
                 }
               }
               _global._dataOP.loadFile(function(err, result) {
+                var msgtime = new Date();
+                var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
                 if (err) {
-                  //Messenger().post('err' + result);
+                  curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '（导入文件失败）<br/>');
                 } else {
                   _global._imV.deleteTmpFile(function(err, deleteRst) {}, filePath);
-                  var msgtime = new Date();
-                  var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
                   curEditBox_.divAppendContent($('#disp_text_' + toIdentity),'<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<a id ="fileTransRst_'+msg_.key+'">找文件</a><br/>');
                   $('#fileTransRst_'+msg_.key).on('click',function(){
                     var  buf= result['uri'].split('#');
