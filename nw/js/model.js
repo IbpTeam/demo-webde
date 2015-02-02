@@ -1044,6 +1044,8 @@ var AppEntryModel = EntryModel.extend({
       }
       var file_ = appFile_['[Desktop Entry]'],
           mustShow = null;
+      if(typeof file_ === 'undefined')
+        return _this.setNoDisplay(true);
       // check if need to show
       if(typeof file_['OnlyShowIn'] !== 'undefined') {
         var tmp = file_['OnlyShowIn'].split(';');
