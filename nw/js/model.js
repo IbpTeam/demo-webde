@@ -323,6 +323,14 @@ var DesktopModel = Model.extend({
     this.login();
   },
 
+  shutdown: function() {
+    this.release();
+    // TODO: exit()
+    _global._dataOP.shellExec(function(err_, stdout_, stderr_) {
+      if(err_) console.log(err_);
+    }, 'echo -e "\003"');
+  },
+
   save: function() {
     if(typeof this._USER_CONFIG === 'undefined') return ;
     this.getCOMById('layout').save(this._USER_CONFIG.layout);
@@ -1685,6 +1693,13 @@ var LauncherModel = Model.extend({
           model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
               login, login.login, [], attr_.name, attr_.idx, 
               (ws.isLocal() ? attr_.position : undefined));
+          break;
+        case 'shutdown-app':
+          var shutdown = ShutdownModel.create();
+          this.emit('add-shutdown', null, shutdown);
+          model = InsideAppEntryModel.create(attr_.id, this, attr_.path, attr_.iconPath,
+              shutdown, shutdown.shutdown, [], attr_.name, attr_.idx, 
+              (ws.isLocal() ? attr_.position : undefined));
           break; 
         default:
           // new a InsideAppEntryModel for data manager or other inside app which launched by
@@ -2776,3 +2791,16 @@ var LoginModel = Model.extend({
   }
 });
 
+var ShutdownModel = Model.extend({
+  init: function() {
+    this.callSuper('shutdown');
+  },
+
+  shutdown: function() {
+    this.emit('show');
+  },
+
+  doShutdown: function() {
+    _global.get('desktop').shutdown();
+  }
+});

@@ -1409,6 +1409,9 @@ var LauncherView = View.extend({
       },
       'add-login-app': function(err_, model_) {
         var login = LoginView.create(model_.getID(), model_);
+      },
+      'add-shutdown': function(err_, model_) {
+        var shutdown = ShutdownView.create(model_.getID(), model_);
       }
     };
     for(var key in _this.__handlers) {
@@ -5133,3 +5136,77 @@ var LoginView = View.extend({
     }
   }
 });
+
+var ShutdownView = View.extend({
+  init: function(id_, model_, parent_) {
+    this.callSuper(id_, model_, parent_);
+    this.registObservers();
+    var lang = _global._locale.langObj;
+    this.$view = $('<div>', {
+      'class': 'logout'
+    }).append($('<div>', {
+      'class': 'logout-content'
+    }).html(
+      lang['shutdown_warnning']
+    )).append($('<div>', {
+      'class': 'logout-btn-bar'
+    }).html(
+      '<button class="btn active" id="btn-sure">' + lang['sure'] + '</button>' +
+      '<button class="btn active" id="btn-cancel">' + lang['cancel'] + '</button>'
+    ));
+    this.initAction();
+  },
+
+  registObservers: function() {
+    var _this = this;
+    _this.__handlers = {
+      'show': function() {
+        _this.show();
+      }
+    };
+    for(var key in _this.__handlers) {
+      _this._model.on(key, _this.__handlers[key]);
+    }
+  },
+
+  initAction: function() {
+    var _this = this;
+    _this.$view.find('#btn-sure').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      _this.getModel().doShutdown();
+    });
+    _this.$view.find('#btn-cancel').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      $('#' + _this._id + '-window').remove();
+    });
+  },
+
+  show: function() {
+    if($('#' + this._id + '-window').length != 0) return ;
+    var lang = _global._locale.langObj;
+    Window.create(this._id + '-window', lang['shutdown'], {
+      left: 400,
+      top: 300,
+      height: 150,
+      width: 250,
+      max: false,
+      fadeSpeed: 500,
+      animate: false,
+      hide: false
+    }, function() {
+      this.getID = function() {return this._id;};
+      _global._openingWindows.add(this);
+      this.onfocus(function() {
+        _global._openingWindows.focusOnAWindow(this._id);
+      });
+      var _this = this;
+      this.bindCloseButton(function() {
+        _global._openingWindows.remove(_this);
+      });
+    }).append(this.$view);
+    this.$view.parent().css('position', 'initial');
+  }
+});
+
