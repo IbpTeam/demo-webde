@@ -506,6 +506,7 @@ var DockModel = Model.extend({
 
     // var lastSave = [];
     for(var key in conf_) {
+      if(conf_[key].id == 'shutdown-app' && !_global.get('ws').isLocal()) return ;
       var model,
           launcher = _global.get('desktop').getCOMById('launcher');
       try {
@@ -2238,6 +2239,7 @@ var WidgetManager = Model.extend({
         launcher = _global.get('desktop').getCOMById('launcher'),
         ws = _global.get('ws');
     for(var key in conf_.insideApp) {
+      if(conf_.insideApp[key].id == 'shutdown-app' && !_global.get('ws').isLocal()) return ;
       var model;
       try {
         model = launcher.get(conf_.insideApp[key].id);
