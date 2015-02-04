@@ -3585,10 +3585,14 @@ var UEditBox = Class.extend({
       _this._localAccount = localData.account;
       _this._localUID = localData.UID;
     });
+    var leftX = parseInt(document.body.clientWidth)/2-320;
+    var topY = parseInt(document.body.clientHeight)/2-300;
     this._imWindow = Window.create('imChat_' + _this._toIdentity, _this._title, {
       height: 600,
       width: 640,
       max: false,
+      left:leftX,
+      top:topY,
       resize: false
     }, function() {
       this.getID = function() {
