@@ -325,10 +325,11 @@ var DesktopModel = Model.extend({
 
   shutdown: function() {
     this.release();
-    // TODO: exit()
+    // exit process
+    var pName = 'nw';
     _global._dataOP.shellExec(function(err_, stdout_, stderr_) {
       if(err_) console.log(err_);
-    }, 'echo -e "\003"');
+    }, 'pkill -9 ' + pName);
   },
 
   save: function() {
