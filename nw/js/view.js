@@ -2718,7 +2718,11 @@ var DockEntryView = View.extend({
       if (typeof $('#insert')[0] == 'undefined') {
         _source = $('<div>', {
           'id': 'insert'
-        }).html("<img src='img/insert.gif'/>");
+        }).html("<img src='img/insert.gif'/>").on('dragover', function(ev) {
+          ev.stopPropagation();
+          ev.preventDefault();
+          ev.originalEvent.dataTransfer.dropEffect = 'copy';
+        });
       } else {
          _source = $('#insert');
       }
