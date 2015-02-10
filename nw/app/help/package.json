@@ -1,0 +1,12 @@
+{
+  "main": "index.html",
+  "name": "使用手册",
+  "window": {
+    "title": "使用手册",
+    "icon": "img/help.png",
+    "toolbar": false,
+    "frame": true,
+    "width": 1000,
+    "height": 800
+  }
+}
