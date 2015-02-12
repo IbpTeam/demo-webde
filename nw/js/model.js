@@ -324,7 +324,7 @@ var DesktopModel = Model.extend({
   },
 
   shutdown: function() {
-    this.release();
+    //this.release();
     // exit process
     var pName = 'nw';
     _global._dataOP.shellExec(function(err_, stdout_, stderr_) {
