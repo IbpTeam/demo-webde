@@ -5158,7 +5158,6 @@ var ShutdownView = View.extend({
       '<button class="btn active" id="btn-sure">' + lang['sure'] + '</button>' +
       '<button class="btn active" id="btn-cancel">' + lang['cancel'] + '</button>'
     ));
-    this.initAction();
   },
 
   registObservers: function() {
@@ -5175,12 +5174,12 @@ var ShutdownView = View.extend({
 
   initAction: function() {
     var _this = this;
-    _this.$view.find('#btn-sure').on('click', function(e) {
+    _this.$view.find('#btn-sure').one('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
       _this.getModel().doShutdown();
     });
-    _this.$view.find('#btn-cancel').on('click', function(e) {
+    _this.$view.find('#btn-cancel').one('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
       $('#' + _this._id + '-window').remove();
@@ -5211,6 +5210,7 @@ var ShutdownView = View.extend({
       });
     }).append(this.$view);
     this.$view.parent().css('position', 'initial');
+    this.initAction();
   }
 });
 
