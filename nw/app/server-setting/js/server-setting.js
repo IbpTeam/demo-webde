@@ -1,10 +1,6 @@
 /* app for setting  http-server
  */
 var _data, _im;
-WDC.requireAPI(['data', 'IM'], function(data, im) {
-  _data = data;
-  _im = im;
-});
 var _global = undefined;
 var _deviceList = undefined;
 try {
@@ -13,19 +9,41 @@ try {
     _deviceList = _global.get('desktop').getCOMById('device-list');
   }
 } catch (e) {
-  console.log(e);
+  console.log('error:'+e);
 }
 
 $(document).ready(function() {
   console.log("Starting Server-setting App...");
-  init();
+  WDC.requireAPI(['data', 'IM'], function(data, im) {
+    _data = data;
+    _im = im;
+    init();
+  }); 
 });
 
 function init() {
-  $('#close').addClass('white')
-  $('#close').removeClass('disabled');
-  $('#start').addClass('disabled');
-  $('#start').removeClass('white');
+  _im.getIMServiceState(function(imStarted){
+    if(imStarted){
+      _data.getServerState(function(serverStarted){
+        if(serverStarted){
+          $('#close').addClass('white')
+          $('#close').removeClass('disabled');
+          $('#start').addClass('disabled');
+          $('#start').removeClass('white');
+        }else{
+          $('#start').addClass('white')
+          $('#start').removeClass('disabled');
+          $('#close').addClass('disabled');
+          $('#close').removeClass('white');
+        }
+      });
+    }else{
+      $('#start').addClass('white')
+      $('#start').removeClass('disabled');
+      $('#close').addClass('disabled');
+      $('#close').removeClass('white');
+    }
+  },false);
   console.log("init() has been executed...");
 }
 
