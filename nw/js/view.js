@@ -4147,12 +4147,12 @@ var UEditBox = Class.extend({
             sendMsg['localUID'] = curEditBox_._localUID;
             sendMsg['App'] = 'imChat';
             curEditBox_.transferCancelSender(fileMsg, true, 0, curEditBox_, sendMsg, curFile, undefined, function() {
-              curEditBox_.fileItemTransRemove(curEditBox_, fileMsg.key, true);
               var ratioLable = '您中止了传输文件："' + fileMsg.fileName + '"(大小：' + fileMsg.fileSize + ')。';
               var msgtime = new Date();
               var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
               curEditBox_.divAppendContent($('#disp_text_' + toIdentity), '<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<br/>');
             });
+            curEditBox_.fileItemTransRemove(curEditBox_, fileMsg.key, true);
           });
         }, fileTransMsg, _global.get('ws').getSessionID(), true);
       }
@@ -4316,7 +4316,7 @@ var UEditBox = Class.extend({
             'msg': rst
           });
           if (msg_.state === 1) {
-            var curRatio=(msg_.ratio.toFixed(4) * 100) ;
+            var curRatio=((msg_.ratio)* 100).toFixed(2) ;
             $('#fileRatio_' + msg_.key).text(curRatio + '%');
             var _gauge = Gauge.create();
             _gauge.modify($('#fileGauge_' + msg_.key)[0], {
@@ -4369,7 +4369,7 @@ var UEditBox = Class.extend({
           var fromAcc = curEditBox_._group === '' ? '对方' : sendMsg_.fromAccount + '(' + sendMsg_.fromUID + ')';
           _global._imV.transferProcessing(function() {
             if (msg_.state === 1) {
-              var curRatio=(msg_.ratio.toFixed(4) * 100) ;
+              var curRatio=((msg_.ratio)* 100).toFixed(2) ;
               $('#fileRatio_' + msg_.key).text(curRatio+ '%');
               var _gauge = Gauge.create();
               _gauge.modify($('#fileGauge_' + msg_.key)[0], {
@@ -4404,7 +4404,7 @@ var UEditBox = Class.extend({
             };
           } else {
             if (msg_.state === 1) {
-              var curRatio=(msg_.ratio.toFixed(4) * 100) ;
+              var curRatio=((msg_.ratio)* 100).toFixed(2) ;
               $('#fileRatio_' + msg_.key).text(curRatio+ '%');
               var _gauge = Gauge.create();
               _gauge.modify($('#fileGauge_' + msg_.key)[0], {
@@ -4558,7 +4558,13 @@ var UEditBox = Class.extend({
                 </li>';
     curEditBox_.divAppendContent($('#fileTransList_' + toIdentity),txt);
     $('#cancelFileItem_' + msg_.key).on('click', function() {
-      _global._imV.transferCancelReciever(function() {}, msg_.key);
+      _global._imV.transferCancelReciever(function() {
+        var ratioLable = '您取消接收文件："' + msg_.fileName + '"(大小：' + msg_.fileSize + ')。';
+        var msgtime = new Date();
+        var sendTime = msgtime.getHours() + ':' + msgtime.getMinutes() + ':' + msgtime.getSeconds();
+        curEditBox_.divAppendContent($('#disp_text_' + toIdentity), '<span class="timeFont"> ' + sendTime + '  :</span><br/>' + ratioLable + '<br/>');
+      }, msg_.key);
+      curEditBox_.fileItemTransRemove(curEditBox_, msg_.key, true);
     });
     $('#fileRatio_' + msg_.key).text('0%');
     var _gauge = Gauge.create();
@@ -4688,14 +4694,14 @@ var UEditBox = Class.extend({
                     case 2: //cancel send
                       {
                         curEditBox_.transferCancelSender(fileMsgTmp, true, 0, curEditBox_, sendMsg, detail, undefined, function() {
-                          curEditBox_.fileItemTransRemove(curEditBox_, key, true);
                         });
+                        curEditBox_.fileItemTransRemove(curEditBox_, key, true);
                       }
                       break;
                     case 6:{
                       curEditBox_.transferCancelSender(fileMsgTmp, true, 0, curEditBox_, sendMsg, detail, undefined, function() {
-                        curEditBox_.fileItemTransRemove(curEditBox_, key, true);
                       });
+                      curEditBox_.fileItemTransRemove(curEditBox_, key, true);
                     }
                       break;
                     default:;
